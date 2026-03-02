@@ -61,7 +61,7 @@ const navLinks = [
 ];
 
 const MEMBERSHIP_COLORS: Record<string, string> = {
-  Regular: "bg-slate-500/10 text-slate-400 border-slate-500/20",
+  Regular: "bg-green-500/10 text-slate-400 border-green-500/20",
   Premium: "bg-blue-500/10  text-blue-400  border-blue-500/20",
   VIP: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
 };
