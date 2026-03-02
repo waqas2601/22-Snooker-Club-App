@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   FiHome,
@@ -65,10 +65,18 @@ const MEMBERSHIP_COLORS: Record<string, string> = {
   Premium: "bg-blue-500/10  text-blue-400  border-blue-500/20",
   VIP: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
 };
-const MEMBERSHIP_ICONS: Record<string, React.ElementType> = {
-  Regular: FiUser,
-  Premium: FiStar,
-  VIP: FiStar,
+
+// Use a concrete function type instead of React.ElementType to avoid
+// the "undefined element type" error in production builds where React
+// may not be in scope as a namespace.
+type IconComponent = (props: {
+  className?: string;
+}) => React.ReactElement | null;
+
+const MEMBERSHIP_ICONS: Record<string, IconComponent> = {
+  Regular: FiUser as IconComponent,
+  Premium: FiStar as IconComponent,
+  VIP: FiStar as IconComponent,
 };
 
 // ─── Sidebar ───────────────────────────────────────────────
@@ -315,7 +323,7 @@ function PlayerModal({
   );
 }
 
-// ─── Delete Modal ────────────────────────────���─────────────
+// ─── Delete Modal ──────────────────────────────────────────
 function DeleteModal({
   player,
   onClose,
@@ -400,7 +408,6 @@ function SettleDebtModal({
             Rs. {amount.toLocaleString()} collected from{" "}
             <span className="text-white font-semibold">{player.name}</span>
           </p>
-
           <div className="bg-slate-800/50 border border-slate-700/40 rounded-xl p-4 mb-5 space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-slate-400">Amount Collected</span>
@@ -421,7 +428,6 @@ function SettleDebtModal({
               </div>
             )}
           </div>
-
           <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-3 mb-5">
             <p className="text-blue-400 text-xs flex items-start gap-2">
               <FiInfo className="shrink-0 mt-0.5" />
@@ -429,7 +435,6 @@ function SettleDebtModal({
               the Payments page.
             </p>
           </div>
-
           <button
             onClick={onClose}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl text-sm font-semibold transition-colors"
@@ -599,20 +604,12 @@ function PlayerCard({
 
   return (
     <div
-      className={`bg-slate-900/60 border rounded-2xl p-5 transition-all flex flex-col ${
-        debt > 0
-          ? "border-orange-500/20 hover:border-orange-500/40"
-          : "border-slate-700/40 hover:border-slate-600/60"
-      }`}
+      className={`bg-slate-900/60 border rounded-2xl p-5 transition-all flex flex-col ${debt > 0 ? "border-orange-500/20 hover:border-orange-500/40" : "border-slate-700/40 hover:border-slate-600/60"}`}
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <div
-            className={`w-11 h-11 rounded-2xl flex items-center justify-center text-white text-lg font-bold shrink-0 ${
-              isVisitedToday
-                ? "bg-gradient-to-br from-emerald-500 to-emerald-700"
-                : "bg-gradient-to-br from-blue-500 to-blue-700"
-            }`}
+            className={`w-11 h-11 rounded-2xl flex items-center justify-center text-white text-lg font-bold shrink-0 ${isVisitedToday ? "bg-gradient-to-br from-emerald-500 to-emerald-700" : "bg-gradient-to-br from-blue-500 to-blue-700"}`}
           >
             {player.name.charAt(0)}
           </div>
@@ -655,13 +652,7 @@ function PlayerCard({
         </div>
         <div className="bg-slate-800/40 rounded-xl p-2.5 text-center">
           <p
-            className={`font-bold text-xs leading-snug mt-0.5 ${
-              isVisitedToday
-                ? "text-emerald-400"
-                : daysSince <= 3
-                  ? "text-blue-400"
-                  : "text-slate-400"
-            }`}
+            className={`font-bold text-xs leading-snug mt-0.5 ${isVisitedToday ? "text-emerald-400" : daysSince <= 3 ? "text-blue-400" : "text-slate-400"}`}
           >
             {isVisitedToday
               ? "Today"
@@ -784,11 +775,9 @@ export default function PlayersPage() {
     setPlayers(saved ? JSON.parse(saved) : []);
 
     const savedDebts = localStorage.getItem(`club_debts_${u.email}`);
-    if (savedDebts) setDebts(JSON.parse(savedDebts));
-    else setDebts({});
+    setDebts(savedDebts ? JSON.parse(savedDebts) : {});
   }, [router]);
 
-  // ✅ Reload debts when tab gains focus (in case Dashboard updated them)
   useEffect(() => {
     const onFocus = () => {
       if (!user) return;
@@ -836,7 +825,6 @@ export default function PlayersPage() {
   const handleDelete = (id: string) =>
     persist(players.filter((p) => p.id !== id));
 
-  // ✅ FIXED: Settle debt — NO club_today updates
   const handleSettle = (
     playerName: string,
     amount: number,
@@ -844,14 +832,12 @@ export default function PlayersPage() {
   ) => {
     if (!user) return;
 
-    // 1. Reduce / clear debt in club_debts
+    // 1. Reduce / clear debt
     const newDebts = { ...debts };
     newDebts[playerName] = Math.max(0, (newDebts[playerName] || 0) - amount);
     if (newDebts[playerName] === 0) delete newDebts[playerName];
     setDebts(newDebts);
     localStorage.setItem(`club_debts_${user.email}`, JSON.stringify(newDebts));
-
-    // ❌ REMOVED: Don't write to club_today — Dashboard calculates from club_recent
 
     // 2. Write DebtPayment record to club_recent
     const recentKey = `club_recent_${user.email}`;
@@ -868,14 +854,14 @@ export default function PlayersPage() {
       endTime: Date.now(),
       paymentMethod: "DebtPayment",
       settledMethod: method,
-      creditPlayerName: undefined,
+      creditPlayerName: playerName,
     };
     localStorage.setItem(
       recentKey,
       JSON.stringify([record, ...recent].slice(0, 200)),
     );
 
-    // 3. Update player: totalPaid increases, lastVisit = today
+    // 3. Update player stats
     const todayStr = new Date().toISOString().split("T")[0];
     persist(
       players.map((p) => {
@@ -953,36 +939,44 @@ export default function PlayersPage() {
 
         <main className="flex-1 p-4 lg:p-8 space-y-6">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              {
-                label: "Total Players",
-                value: players.length,
-                sub: "Registered members",
-                icon: FiUsers,
-                color: "blue",
-              },
-              {
-                label: "Active Today",
-                value: activeToday,
-                sub: "Visited today",
-                icon: FiClock,
-                color: "emerald",
-              },
-              {
-                label: "Total Games",
-                value: players.reduce((a, p) => a + (p.totalGames || 0), 0),
-                sub: "All time",
-                icon: FiAward,
-                color: "purple",
-              },
-              {
-                label: "Outstanding Debt",
-                value: `Rs. ${totalDebt.toLocaleString()}`,
-                sub: `${debtorCount} player${debtorCount !== 1 ? "s" : ""} owe`,
-                icon: FiAlertTriangle,
-                color: "orange",
-              },
-            ].map((s) => (
+            {(
+              [
+                {
+                  label: "Total Players",
+                  value: players.length,
+                  sub: "Registered members",
+                  icon: FiUsers,
+                  color: "blue",
+                },
+                {
+                  label: "Active Today",
+                  value: activeToday,
+                  sub: "Visited today",
+                  icon: FiClock,
+                  color: "emerald",
+                },
+                {
+                  label: "Total Games",
+                  value: players.reduce((a, p) => a + (p.totalGames || 0), 0),
+                  sub: "All time",
+                  icon: FiAward,
+                  color: "purple",
+                },
+                {
+                  label: "Outstanding Debt",
+                  value: `Rs. ${totalDebt.toLocaleString()}`,
+                  sub: `${debtorCount} player${debtorCount !== 1 ? "s" : ""} owe`,
+                  icon: FiAlertTriangle,
+                  color: "orange",
+                },
+              ] as {
+                label: string;
+                value: string | number;
+                sub: string;
+                icon: React.ComponentType<{ className?: string }>;
+                color: string;
+              }[]
+            ).map((s) => (
               <div
                 key={s.label}
                 className={`bg-slate-900/60 border rounded-2xl p-4 ${s.color === "orange" && totalDebt > 0 ? "border-orange-500/25 bg-orange-500/5" : "border-slate-700/40"}`}
