@@ -68,7 +68,7 @@ const MEMBERSHIP_COLORS: Record<string, string> = {
 const MEMBERSHIP_ICONS: Record<string, React.ElementType> = {
   Regular: FiUser,
   Premium: FiStar,
-  VIP: FiAward,
+  VIP: FiStar,
 };
 
 // ─── Sidebar ───────────────────────────────────────────────
