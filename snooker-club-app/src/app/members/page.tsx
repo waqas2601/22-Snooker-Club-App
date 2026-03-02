@@ -73,10 +73,10 @@ type IconComponent = (props: {
   className?: string;
 }) => React.ReactElement | null;
 
-const MEMBERSHIP_ICONS: Record<string, IconComponent> = {
-  Regular: FiUser as IconComponent,
-  Premium: FiStar as IconComponent,
-  VIP: FiStar as IconComponent,
+const MEMBERSHIP_ICONS: Record<string, any> = {
+  Regular: FiUser,
+  Premium: FiStar,
+  VIP: FiAward,
 };
 
 // ─── Sidebar ───────────────────────────────────────────────

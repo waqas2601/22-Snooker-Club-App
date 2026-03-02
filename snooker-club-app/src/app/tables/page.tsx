@@ -344,7 +344,7 @@ function PlayerSearchInput({
   );
 }
 
-// ─── Start Session Modal (WITH REGISTRATION) ───────────────
+// ─── Start Session Modal ───────────────────────────────────
 function StartSessionModal({
   table,
   savedPlayers,
@@ -372,56 +372,7 @@ function StartSessionModal({
   );
   const [validationError, setValidationError] = useState("");
 
-  // ✅ NEW: Registration Modal State
-  const [showRegisterModal, setShowRegisterModal] = useState(false);
-  const [registerIndex, setRegisterIndex] = useState<number | null>(null);
-  const [registerName, setRegisterName] = useState("");
-  const [registerPhone, setRegisterPhone] = useState("");
-
   const activeGames = gameTypes.filter((g) => g.enabled);
-
-  // ✅ NEW: Handle Quick Registration
-  const handleQuickRegister = () => {
-    if (!registerName.trim()) {
-      alert("Please enter a name");
-      return;
-    }
-
-    // Get user email from localStorage
-    const stored = localStorage.getItem("club_user");
-    if (!stored) return;
-    const user = JSON.parse(stored);
-
-    // Create new player
-    const newPlayer: Player = {
-      id: `player-${Date.now()}`,
-      name: registerName.trim(),
-      phone: registerPhone.trim(),
-    };
-
-    // Save to localStorage
-    const playersKey = `club_players_${user.email}`;
-    const existing = localStorage.getItem(playersKey);
-    const players: Player[] = existing ? JSON.parse(existing) : [];
-    players.push(newPlayer);
-    localStorage.setItem(playersKey, JSON.stringify(players));
-
-    // Update the player name in the form
-    if (registerIndex !== null) {
-      const updated = [...playerNames];
-      updated[registerIndex] = registerName.trim();
-      setPlayerNames(updated);
-    }
-
-    // Close modal
-    setShowRegisterModal(false);
-    setRegisterIndex(null);
-    setRegisterName("");
-    setRegisterPhone("");
-
-    // Refresh page to reload savedPlayers (or use state update)
-    window.location.reload();
-  };
 
   const handleStart = (e: React.FormEvent) => {
     e.preventDefault();
@@ -434,17 +385,20 @@ function StartSessionModal({
 
     const filled = playerNames.filter((n) => n.trim());
 
+    // Validation 1: At least 1 player
     if (filled.length < 1) {
       setValidationError("At least 1 player is required");
       return;
     }
 
+    // Validation 2: No duplicate names
     const uniqueNames = new Set(filled.map((n) => n.trim().toLowerCase()));
     if (uniqueNames.size !== filled.length) {
       setValidationError("Duplicate player names are not allowed");
       return;
     }
 
+    // Validation 3: Check if any registered player is already playing
     const conflictingPlayers: string[] = [];
     filled.forEach((name) => {
       const saved = savedPlayers.find(
@@ -486,253 +440,159 @@ function StartSessionModal({
   const filledCount = playerNames.filter((n) => n.trim()).length;
 
   return (
-    <>
-      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="bg-slate-900 border border-slate-700/50 rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
-          <div className="flex items-center justify-between p-6 border-b border-slate-700/40">
-            <div>
-              <h2 className="text-white font-bold text-lg">Start Session</h2>
-              <p className="text-slate-400 text-xs mt-0.5">
-                {table.name || `Table ${table.id}`}
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
-            >
-              <FiX />
-            </button>
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-slate-900 border border-slate-700/50 rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-6 border-b border-slate-700/40">
+          <div>
+            <h2 className="text-white font-bold text-lg">Start Session</h2>
+            <p className="text-slate-400 text-xs mt-0.5">
+              {table.name || `Table ${table.id}`}
+            </p>
           </div>
-          <form onSubmit={handleStart} className="p-6 space-y-6">
-            {validationError && (
-              <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 flex items-start gap-2">
-                <FiAlertTriangle className="text-red-400 text-sm shrink-0 mt-0.5" />
-                <p className="text-red-400 text-sm">{validationError}</p>
+          <button
+            onClick={onClose}
+            className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+          >
+            <FiX />
+          </button>
+        </div>
+        <form onSubmit={handleStart} className="p-6 space-y-6">
+          {/* Validation Error */}
+          {validationError && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 flex items-start gap-2">
+              <FiAlertTriangle className="text-red-400 text-sm shrink-0 mt-0.5" />
+              <p className="text-red-400 text-sm">{validationError}</p>
+            </div>
+          )}
+
+          {/* Game Type */}
+          <div>
+            <label className="text-slate-300 text-sm font-semibold block mb-3">
+              Select Game Type
+            </label>
+            {activeGames.length === 0 ? (
+              <div className="bg-slate-800/50 border border-slate-700/40 rounded-xl p-4 text-center">
+                <p className="text-slate-400 text-sm">No active game types.</p>
+                <a
+                  href="/games"
+                  className="text-blue-400 text-xs hover:underline"
+                >
+                  Go to Games page to enable
+                </a>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {activeGames.map((game) => (
+                  <button
+                    key={game.id}
+                    type="button"
+                    onClick={() => setSelectedGame(game)}
+                    className={`p-3 rounded-xl border text-left transition-all ${
+                      selectedGame?.id === game.id
+                        ? "bg-blue-600/30 border-blue-500/50 ring-1 ring-blue-500/30"
+                        : "bg-slate-800/50 border-slate-700/40 hover:border-slate-600"
+                    }`}
+                  >
+                    <p
+                      className={`text-sm font-semibold ${selectedGame?.id === game.id ? "text-blue-400" : "text-white"}`}
+                    >
+                      {game.name}
+                    </p>
+                    <p className="text-slate-400 text-xs mt-0.5">
+                      Rs. {game.rate} / {game.unit.replace("per ", "")}
+                    </p>
+                  </button>
+                ))}
               </div>
             )}
+          </div>
 
-            {/* Game Type */}
-            <div>
-              <label className="text-slate-300 text-sm font-semibold block mb-3">
-                Select Game Type
+          {/* Players */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <label className="text-slate-300 text-sm font-semibold">
+                Players{" "}
+                <span className="text-slate-500 text-xs font-normal">
+                  ({filledCount} added)
+                </span>
               </label>
-              {activeGames.length === 0 ? (
-                <div className="bg-slate-800/50 border border-slate-700/40 rounded-xl p-4 text-center">
-                  <p className="text-slate-400 text-sm">
-                    No active game types.
-                  </p>
-                  <a
-                    href="/games"
-                    className="text-blue-400 text-xs hover:underline"
-                  >
-                    Go to Games page to enable
-                  </a>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-2">
-                  {activeGames.map((game) => (
-                    <button
-                      key={game.id}
-                      type="button"
-                      onClick={() => setSelectedGame(game)}
-                      className={`p-3 rounded-xl border text-left transition-all ${
-                        selectedGame?.id === game.id
-                          ? "bg-blue-600/30 border-blue-500/50 ring-1 ring-blue-500/30"
-                          : "bg-slate-800/50 border-slate-700/40 hover:border-slate-600"
-                      }`}
-                    >
-                      <p
-                        className={`text-sm font-semibold ${selectedGame?.id === game.id ? "text-blue-400" : "text-white"}`}
-                      >
-                        {game.name}
-                      </p>
-                      <p className="text-slate-400 text-xs mt-0.5">
-                        Rs. {game.rate} / {game.unit.replace("per ", "")}
-                      </p>
-                    </button>
-                  ))}
-                </div>
+              {playerNames.length < 4 && (
+                <button
+                  type="button"
+                  onClick={() => setPlayerNames([...playerNames, ""])}
+                  className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                >
+                  <FiPlus /> Add Player
+                </button>
               )}
             </div>
-
-            {/* Players */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <label className="text-slate-300 text-sm font-semibold">
-                  Players{" "}
-                  <span className="text-slate-500 text-xs font-normal">
-                    ({filledCount} added)
-                  </span>
-                </label>
-                {playerNames.length < 4 && (
-                  <button
-                    type="button"
-                    onClick={() => setPlayerNames([...playerNames, ""])}
-                    className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors"
-                  >
-                    <FiPlus /> Add Player
-                  </button>
-                )}
-              </div>
-              <div className="space-y-2.5">
-                {playerNames.map((name, i) => {
-                  const isRegistered = savedPlayers.some(
-                    (p) => p.name.toLowerCase() === name.trim().toLowerCase(),
-                  );
-
-                  return (
-                    <div key={i}>
-                      <PlayerSearchInput
-                        index={i}
-                        value={name}
-                        onChange={(v) =>
-                          setPlayerNames(
-                            playerNames.map((p, idx) => (idx === i ? v : p)),
-                          )
-                        }
-                        onRemove={() =>
-                          setPlayerNames(
-                            playerNames.filter((_, idx) => idx !== i),
-                          )
-                        }
-                        savedPlayers={savedPlayers}
-                        canRemove={playerNames.length > 2}
-                        occupiedPlayers={occupiedPlayers}
-                      />
-                      {/* ✅ NEW: Register Button for Walk-ins */}
-                      {name.trim() && !isRegistered && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setRegisterIndex(i);
-                            setRegisterName(name.trim());
-                            setShowRegisterModal(true);
-                          }}
-                          className="mt-1.5 ml-8 flex items-center gap-1.5 text-xs text-orange-400 hover:text-orange-300 transition-colors"
-                        >
-                          <FiAlertTriangle className="text-[10px]" />
-                          Walk-in player • Click to register for credit
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-              <p className="text-slate-600 text-xs mt-2">
-                Min 1 player • Max 4 players
-              </p>
-            </div>
-
-            {/* Summary */}
-            {selectedGame && filledCount > 0 && (
-              <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Game</span>
-                  <span className="text-white font-medium">
-                    {selectedGame.name}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Rate</span>
-                  <span className="text-white">
-                    Rs. {selectedGame.rate} /{" "}
-                    {selectedGame.unit.replace("per ", "")}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Players</span>
-                  <span className="text-white">{filledCount}</span>
-                </div>
-              </div>
-            )}
-
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 rounded-xl text-sm font-medium transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={!selectedGame || filledCount < 1}
-                className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-700 disabled:text-slate-500 text-white py-3 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2"
-              >
-                <FiCheck /> Start Session
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-      {/* ✅ NEW: Quick Registration Modal */}
-      {showRegisterModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700/50 rounded-2xl w-full max-w-sm shadow-2xl">
-            <div className="p-6 border-b border-slate-700/40">
-              <h3 className="text-white font-bold text-lg">Quick Register</h3>
-              <p className="text-slate-400 text-xs mt-1">
-                Register this player to enable credit
-              </p>
-            </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="text-slate-300 text-sm font-medium block mb-1.5">
-                  Player Name
-                </label>
-                <input
-                  type="text"
-                  value={registerName}
-                  onChange={(e) => setRegisterName(e.target.value)}
-                  className="w-full bg-slate-800/50 border border-slate-600/50 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500"
-                  placeholder="Full name"
-                  autoFocus
+            <div className="space-y-2.5">
+              {playerNames.map((name, i) => (
+                <PlayerSearchInput
+                  key={i}
+                  index={i}
+                  value={name}
+                  onChange={(v) =>
+                    setPlayerNames(
+                      playerNames.map((p, idx) => (idx === i ? v : p)),
+                    )
+                  }
+                  onRemove={() =>
+                    setPlayerNames(playerNames.filter((_, idx) => idx !== i))
+                  }
+                  savedPlayers={savedPlayers}
+                  canRemove={playerNames.length > 2}
+                  occupiedPlayers={occupiedPlayers}
                 />
-              </div>
-              <div>
-                <label className="text-slate-300 text-sm font-medium block mb-1.5">
-                  Phone Number{" "}
-                  <span className="text-slate-600">(optional)</span>
-                </label>
-                <input
-                  type="tel"
-                  value={registerPhone}
-                  onChange={(e) => setRegisterPhone(e.target.value)}
-                  className="w-full bg-slate-800/50 border border-slate-600/50 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500"
-                  placeholder="03XX XXXXXXX"
-                />
-              </div>
-              <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3">
-                <p className="text-blue-400 text-xs flex items-start gap-2">
-                  <FiCheckCircle className="shrink-0 mt-0.5" />
-                  Registered players can take credit and track game history
-                </p>
-              </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    setShowRegisterModal(false);
-                    setRegisterIndex(null);
-                    setRegisterName("");
-                    setRegisterPhone("");
-                  }}
-                  className="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-xl text-sm font-medium transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleQuickRegister}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2"
-                >
-                  <FiCheck /> Register
-                </button>
-              </div>
+              ))}
             </div>
+            <p className="text-slate-600 text-xs mt-2">
+              Min 1 player • Max 4 players
+            </p>
           </div>
-        </div>
-      )}
-    </>
+
+          {/* Summary */}
+          {selectedGame && filledCount > 0 && (
+            <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-400">Game</span>
+                <span className="text-white font-medium">
+                  {selectedGame.name}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-400">Rate</span>
+                <span className="text-white">
+                  Rs. {selectedGame.rate} /{" "}
+                  {selectedGame.unit.replace("per ", "")}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-400">Players</span>
+                <span className="text-white">{filledCount}</span>
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 rounded-xl text-sm font-medium transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!selectedGame || filledCount < 1}
+              className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-700 disabled:text-slate-500 text-white py-3 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+            >
+              <FiCheck /> Start Session
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }
 
