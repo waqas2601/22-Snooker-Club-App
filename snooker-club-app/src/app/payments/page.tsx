@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-
 import {
   BarChart,
   Bar,
@@ -23,17 +22,19 @@ import {
   FiLogOut,
   FiMenu,
   FiSquare,
-  FiClock,
   FiCalendar,
   FiFilter,
   FiTrendingUp,
   FiActivity,
   FiAlertTriangle,
-  FiMapPin
+  FiMapPin,
+  FiTarget,
+  FiCheckCircle,
+  FiClock,
 } from "react-icons/fi";
 import { GiPoolTriangle } from "react-icons/gi";
 
-// ─── Types ────────────────────────────────────────────────
+// ─── Types ─────────────────────────────────────────────────
 interface ClubUser {
   club_name: string;
   owner_name: string;
@@ -61,65 +62,93 @@ interface CompletedSession {
   totalAmount: number;
   splits: PaymentSplit[];
   endTime: number;
-  paymentMethod?: "Cash" | "EasyPaisa" | "JazzCash" | "OnCredit";
+  paymentMethod?:
+    | "Cash"
+    | "EasyPaisa"
+    | "JazzCash"
+    | "OnCredit"
+    | "DebtPayment";
+  creditPlayerName?: string;
+  settledMethod?: "Cash" | "EasyPaisa" | "JazzCash";
 }
 
-type DateFilter = "today" | "yesterday" | "week" | "all";
-type MethodFilter = "All" | "Cash" | "EasyPaisa" | "JazzCash";
+type DateFilter = "today" | "yesterday" | "week" | "month" | "all";
+type MethodFilter = "All" | "Cash" | "EasyPaisa" | "JazzCash" | "OnCredit";
 
+// ─── Constants ──────────────────────────────────────────────
 const navLinks = [
   { label: "Dashboard", icon: FiHome, href: "/dashboard", active: false },
   { label: "Tables", icon: FiSquare, href: "/tables", active: false },
   { label: "Players", icon: FiUsers, href: "/members", active: false },
   { label: "Payments", icon: FiDollarSign, href: "/payments", active: true },
-  { label: "Games", icon: FiSquare, href: "/games", active: false },
+  { label: "Games", icon: FiTarget, href: "/games", active: false },
   { label: "Profile", icon: FiSettings, href: "/profile", active: false },
 ];
 
-const methodColors: Record<string, string> = {
+const METHOD_COLORS: Record<string, string> = {
   Cash: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
   EasyPaisa: "bg-purple-500/10 text-purple-400 border-purple-500/20",
   JazzCash: "bg-red-500/10 text-red-400 border-red-500/20",
   OnCredit: "bg-orange-500/10 text-orange-400 border-orange-500/20",
+  DebtPayment: "bg-blue-500/10 text-blue-400 border-blue-500/20",
 };
 
-// ─── Helpers ──────────────────────────────────────────────
-function isToday(ts: number) {
+const METHOD_LABELS: Record<string, string> = {
+  Cash: "Cash",
+  EasyPaisa: "EasyPaisa",
+  JazzCash: "JazzCash",
+  OnCredit: "On Credit",
+  DebtPayment: "Debt Collected",
+};
+
+// ─── Helper Functions ───────────────────────────────────────
+function isToday(ts: number): boolean {
   const d = new Date(ts);
+  const n = new Date();
+  return (
+    d.getDate() === n.getDate() &&
+    d.getMonth() === n.getMonth() &&
+    d.getFullYear() === n.getFullYear()
+  );
+}
+
+function isYesterday(ts: number): boolean {
+  const d = new Date(ts);
+  const y = new Date();
+  y.setDate(y.getDate() - 1);
+  return (
+    d.getDate() === y.getDate() &&
+    d.getMonth() === y.getMonth() &&
+    d.getFullYear() === y.getFullYear()
+  );
+}
+
+function isThisWeek(ts: number): boolean {
   const now = new Date();
-  return (
-    d.getDate() === now.getDate() &&
-    d.getMonth() === now.getMonth() &&
-    d.getFullYear() === now.getFullYear()
-  );
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  return ts >= weekAgo.getTime();
 }
 
-function isYesterday(ts: number) {
+function isThisMonth(ts: number): boolean {
   const d = new Date(ts);
-  const yest = new Date();
-  yest.setDate(yest.getDate() - 1);
-  return (
-    d.getDate() === yest.getDate() &&
-    d.getMonth() === yest.getMonth() &&
-    d.getFullYear() === yest.getFullYear()
-  );
+  const n = new Date();
+  return d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear();
 }
 
-function isThisWeek(ts: number) {
-  return Date.now() - ts < 7 * 24 * 60 * 60 * 1000;
-}
-
-function getDateLabel(ts: number) {
+function getDateLabel(ts: number): string {
   if (isToday(ts)) return "Today";
   if (isYesterday(ts)) return "Yesterday";
   return new Date(ts).toLocaleDateString("en-PK", {
     weekday: "long",
     day: "numeric",
     month: "long",
+    year: "numeric",
   });
 }
 
-function groupByDate(sessions: CompletedSession[]) {
+function groupByDate(
+  sessions: CompletedSession[],
+): Record<string, CompletedSession[]> {
   const groups: Record<string, CompletedSession[]> = {};
   sessions.forEach((s) => {
     const label = getDateLabel(s.endTime);
@@ -129,7 +158,90 @@ function groupByDate(sessions: CompletedSession[]) {
   return groups;
 }
 
-// ─── Sidebar ───────────────────────────────────────────────
+// ✅ FIXED: Revenue Calculation
+function getRevenue(sessions: CompletedSession[]): number {
+  return sessions
+    .filter((s) => s.paymentMethod !== "OnCredit")
+    .reduce((a, s) => a + s.totalAmount, 0);
+}
+
+function getCash(sessions: CompletedSession[]): number {
+  return sessions
+    .filter(
+      (s) =>
+        s.paymentMethod === "Cash" ||
+        (s.paymentMethod === "DebtPayment" &&
+          (!s.settledMethod || s.settledMethod === "Cash")),
+    )
+    .reduce((a, s) => a + s.totalAmount, 0);
+}
+
+function getOnline(sessions: CompletedSession[]): number {
+  return sessions
+    .filter(
+      (s) =>
+        ["EasyPaisa", "JazzCash"].includes(s.paymentMethod ?? "") ||
+        (s.paymentMethod === "DebtPayment" &&
+          ["EasyPaisa", "JazzCash"].includes(s.settledMethod ?? "")),
+    )
+    .reduce((a, s) => a + s.totalAmount, 0);
+}
+
+// ✅ FIXED: Get ACTUAL unpaid credit (current debt from localStorage)
+function getUnpaidCredit(
+  sessions: CompletedSession[],
+  debts: Record<string, number>,
+): number {
+  // Sum up current debts from localStorage (source of truth)
+  return Object.values(debts).reduce((sum, debt) => sum + debt, 0);
+}
+
+function getDebtCollected(sessions: CompletedSession[]): number {
+  return sessions
+    .filter((s) => s.paymentMethod === "DebtPayment")
+    .reduce((a, s) => a + s.totalAmount, 0);
+}
+
+// ─── Custom Chart Tooltips ─────────────────────────────────
+function BarTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: { value: number; name: string; fill: string }[];
+  label?: string;
+}) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 shadow-2xl pointer-events-none">
+      {label && <p className="text-slate-400 text-[11px] mb-1">{label}</p>}
+      <p className="text-white font-bold text-sm">
+        Rs. {Number(payload[0].value).toLocaleString()}
+      </p>
+    </div>
+  );
+}
+
+function PieTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: { name: string; value: number }[];
+}) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 shadow-2xl pointer-events-none">
+      <p className="text-white font-semibold text-sm">{payload[0].name}</p>
+      <p className="text-emerald-400 text-xs font-bold">
+        {payload[0].value} records
+      </p>
+    </div>
+  );
+}
+
+// ─── Sidebar ��──────────────────────────────────────────────
 function Sidebar({
   user,
   open,
@@ -150,13 +262,8 @@ function Sidebar({
         />
       )}
       <aside
-        className={`
-        fixed top-0 left-0 h-screen w-64 bg-slate-900/95 backdrop-blur-xl border-r border-slate-700/50
-        z-30 flex flex-col transition-transform duration-300
-        ${open ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 lg:sticky lg:top-0 lg:z-auto
-      `}
+        className={`fixed top-0 left-0 h-screen w-64 bg-slate-900/95 backdrop-blur-xl border-r border-slate-700/50 z-30 flex flex-col transition-transform duration-300 ${open ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 lg:sticky lg:top-0 lg:z-auto`}
       >
-        {/* Brand */}
         <div className="px-5 pt-5 pb-4 border-b border-slate-700/50">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/20">
@@ -173,25 +280,26 @@ function Sidebar({
           </div>
         </div>
 
-        {/* Club Info */}
         <div className="px-4 py-3 border-b border-slate-700/50">
           <div className="relative bg-gradient-to-br from-blue-600/15 to-blue-500/5 border border-blue-500/20 rounded-xl p-3 overflow-hidden">
-            {/* Decorative dot */}
             <div className="absolute top-2 right-2 w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
             <p className="text-white text-sm font-bold truncate pr-4">
               {user.club_name}
             </p>
             <div className="flex items-center gap-2 mt-1.5">
               <span className="flex items-center gap-1 text-slate-400 text-[10px]">
-                <FiMapPin className="text-[9px]" /> {user.location}
+                <FiMapPin className="text-[9px]" />
+                {user.location}
               </span>
               <span className="text-slate-600">•</span>
               <span className="flex items-center gap-1 text-slate-400 text-[10px]">
-                <FiSquare className="text-[9px]" /> {user.tables} Tables
+                <FiSquare className="text-[9px]" />
+                {user.tables} Tables
               </span>
             </div>
           </div>
         </div>
+
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           <p className="text-slate-600 text-xs font-semibold uppercase tracking-wider px-3 mb-3">
             Navigation
@@ -200,12 +308,7 @@ function Sidebar({
             <a
               key={link.label}
               href={link.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
-                ${
-                  link.active
-                    ? "bg-blue-600/20 text-blue-400 border border-blue-500/30"
-                    : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-                }`}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${link.active ? "bg-blue-600/20 text-blue-400 border border-blue-500/30" : "text-slate-400 hover:text-white hover:bg-slate-800/60"}`}
             >
               <link.icon className="text-lg shrink-0" />
               {link.label}
@@ -215,9 +318,10 @@ function Sidebar({
             </a>
           ))}
         </nav>
+
         <div className="p-4 border-t border-slate-700/50">
           <div className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/40 rounded-xl px-3 py-2.5 mb-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 shadow shadow-blue-500/30">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0">
               {user.owner_name.charAt(0)}
             </div>
             <div className="flex-1 min-w-0">
@@ -248,44 +352,64 @@ function Sidebar({
   );
 }
 
-// ─── Payment Row ───────────────────────────────────────────
+// ─── Payment Row Component ─────────────────────────────────
 function PaymentRow({ session }: { session: CompletedSession }) {
   const [expanded, setExpanded] = useState(false);
-  const method = session.paymentMethod || "Cash";
-  const paidSplits = session.splits?.filter((s) => s.amount > 0) || [];
+  const method = session.paymentMethod ?? "Cash";
+  const isCredit = method === "OnCredit";
+  const isDebt = method === "DebtPayment";
 
   return (
     <div className="border-b border-slate-700/30 last:border-0">
-      {/* Main Row */}
       <div
-        className="px-5 py-4 flex items-center gap-4 hover:bg-slate-800/30 transition-colors cursor-pointer"
+        className="px-5 py-4 flex items-center gap-4 hover:bg-slate-800/20 transition-colors cursor-pointer"
         onClick={() => setExpanded(!expanded)}
       >
-        {/* Table Badge */}
-        <div className="w-10 h-10 bg-blue-600/20 border border-blue-500/20 rounded-xl flex items-center justify-center shrink-0">
-          <span className="text-blue-400 text-xs font-bold">
-            T{session.tableNo}
-          </span>
+        <div
+          className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
+            isDebt
+              ? "bg-blue-500/10 border-blue-500/20"
+              : isCredit
+                ? "bg-orange-500/10 border-orange-500/20"
+                : "bg-slate-800/60 border-slate-700/40"
+          }`}
+        >
+          {isDebt ? (
+            <FiCheckCircle className="text-blue-400 text-base" />
+          ) : (
+            <span
+              className={`text-xs font-bold ${isCredit ? "text-orange-400" : "text-slate-300"}`}
+            >
+              T{session.tableNo || "—"}
+            </span>
+          )}
         </div>
 
-        {/* Players & Game */}
         <div className="flex-1 min-w-0">
-          <p className="text-white text-sm font-medium truncate">
-            {session.players.map((p) => p.name).join(" vs ")}
+          <p className="text-white text-sm font-semibold truncate">
+            {isDebt
+              ? `${session.players[0]?.name} — Debt Collected`
+              : session.players.map((p) => p.name).join(" vs ")}
           </p>
           <p className="text-slate-500 text-xs mt-0.5">
-            {session.gameType} • {session.duration}
+            {isDebt
+              ? `Via ${session.settledMethod ?? "Cash"}`
+              : `${session.gameType} • ${session.duration}`}
           </p>
         </div>
 
-        {/* Method */}
         <span
-          className={`hidden sm:inline-flex text-xs px-2.5 py-1 rounded-lg border font-medium shrink-0 ${methodColors[method]}`}
+          className={`hidden sm:inline-flex text-xs px-2.5 py-1 rounded-lg border font-medium shrink-0 ${METHOD_COLORS[method]}`}
         >
-          {method}
+          {METHOD_LABELS[method]}
         </span>
 
-        {/* Time */}
+        {isCredit && session.creditPlayerName && (
+          <span className="hidden lg:block text-orange-400/60 text-xs shrink-0">
+            {session.creditPlayerName}
+          </span>
+        )}
+
         <span className="hidden lg:block text-slate-500 text-xs shrink-0">
           {new Date(session.endTime).toLocaleTimeString("en-PK", {
             hour: "2-digit",
@@ -293,68 +417,123 @@ function PaymentRow({ session }: { session: CompletedSession }) {
           })}
         </span>
 
-        {/* Amount */}
-        <span className="text-emerald-400 font-bold text-sm shrink-0">
+        <span
+          className={`font-bold text-sm shrink-0 ${
+            isCredit
+              ? "text-orange-400"
+              : isDebt
+                ? "text-blue-400"
+                : "text-emerald-400"
+          }`}
+        >
           Rs. {session.totalAmount.toLocaleString()}
         </span>
 
-        {/* Expand Arrow */}
         <span
-          className={`text-slate-500 text-xs transition-transform ${expanded ? "rotate-180" : ""}`}
+          className={`text-slate-500 text-xs transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
         >
           ▼
         </span>
       </div>
 
-      {/* Expanded Split Details */}
       {expanded && (
-        <div className="px-5 pb-4">
-          <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4">
-            <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
-              Payment Breakdown
+        <div className="px-5 pb-5">
+          <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 space-y-3">
+            <p className="text-slate-400 text-[11px] font-semibold uppercase tracking-widest">
+              {isDebt
+                ? "Debt Collection Details"
+                : isCredit
+                  ? "Unpaid Session"
+                  : "Payment Breakdown"}
             </p>
-            <div className="space-y-2">
-              {session.players.map((player, i) => {
-                const split = session.splits?.find(
-                  (s) => s.playerName === player.name,
-                );
-                const amount = split?.amount || 0;
-                return (
-                  <div key={i} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 bg-blue-600/20 rounded-full flex items-center justify-center">
-                        <span className="text-blue-400 text-[10px] font-bold">
-                          {player.name.charAt(0)}
+
+            {isDebt ? (
+              <div className="space-y-2.5">
+                <div className="flex justify-between">
+                  <span className="text-slate-400 text-sm">Player</span>
+                  <span className="text-white text-sm font-medium">
+                    {session.players[0]?.name}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400 text-sm">
+                    Amount Collected
+                  </span>
+                  <span className="text-emerald-400 font-bold text-sm">
+                    Rs. {session.totalAmount.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400 text-sm">Payment Method</span>
+                  <span
+                    className={`text-xs px-2.5 py-1 rounded-lg border font-medium ${METHOD_COLORS[session.settledMethod ?? "Cash"]}`}
+                  >
+                    {session.settledMethod ?? "Cash"}
+                  </span>
+                </div>
+                <div className="pt-2 border-t border-slate-700/40 flex items-center gap-2">
+                  <FiCheckCircle className="text-blue-400 text-xs" />
+                  <span className="text-blue-400 text-xs">
+                    Added to today's revenue
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {session.players.map((player, i) => {
+                  const split = session.splits?.find(
+                    (s) => s.playerName === player.name,
+                  );
+                  const amt = split?.amount ?? 0;
+                  return (
+                    <div key={i} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 bg-blue-600/20 rounded-full flex items-center justify-center">
+                          <span className="text-blue-400 text-[10px] font-bold">
+                            {player.name.charAt(0)}
+                          </span>
+                        </div>
+                        <span className="text-slate-300 text-sm">
+                          {player.name}
                         </span>
+                        {player.isRegistered && (
+                          <span className="text-blue-400 text-[10px]">★</span>
+                        )}
                       </div>
-                      <span className="text-slate-300 text-sm">
-                        {player.name}
-                      </span>
-                      {player.isRegistered && (
-                        <span className="text-blue-400 text-[10px]">★</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {amount === 0 ? (
+                      {amt === 0 ? (
                         <span className="text-slate-500 text-xs bg-slate-700/40 px-2 py-0.5 rounded-lg">
                           Won
                         </span>
                       ) : (
-                        <span className="text-emerald-400 font-semibold text-sm">
-                          Rs. {amount.toLocaleString()}
+                        <span
+                          className={`font-semibold text-sm ${isCredit ? "text-orange-400" : "text-emerald-400"}`}
+                        >
+                          Rs. {amt.toLocaleString()}
+                          {isCredit && " (credit)"}
                         </span>
                       )}
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="border-t border-slate-700/40 mt-3 pt-3 flex items-center justify-between">
-              <span className="text-slate-400 text-xs">Paid via {method}</span>
-              <span className="text-white font-bold text-sm">
-                Total: Rs. {session.totalAmount.toLocaleString()}
-              </span>
-            </div>
+                  );
+                })}
+                <div className="pt-2 border-t border-slate-700/40 flex items-center justify-between">
+                  {isCredit ? (
+                    <div className="flex items-center gap-1.5">
+                      <FiAlertTriangle className="text-orange-400 text-xs" />
+                      <span className="text-orange-400 text-xs">
+                        Not collected yet — settle from Players page
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-slate-400 text-xs">
+                      Paid via {METHOD_LABELS[method]}
+                    </span>
+                  )}
+                  <span className="text-white font-bold text-sm">
+                    Rs. {session.totalAmount.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -368,6 +547,7 @@ export default function PaymentsPage() {
   const [user, setUser] = useState<ClubUser | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sessions, setSessions] = useState<CompletedSession[]>([]);
+  const [debts, setDebts] = useState<Record<string, number>>({});
   const [dateFilter, setDateFilter] = useState<DateFilter>("today");
   const [methodFilter, setMethodFilter] = useState<MethodFilter>("All");
 
@@ -381,16 +561,44 @@ export default function PaymentsPage() {
     setUser(u);
 
     const recent = localStorage.getItem(`club_recent_${u.email}`);
-    if (recent) setSessions(JSON.parse(recent));
+    if (recent) {
+      setSessions(JSON.parse(recent));
+    }
+
+    // ✅ Load debts (source of truth for unpaid credit)
+    const savedDebts = localStorage.getItem(`club_debts_${u.email}`);
+    setDebts(savedDebts ? JSON.parse(savedDebts) : {});
   }, [router]);
+
+  useEffect(() => {
+    const onFocus = () => {
+      if (!user) return;
+      const recent = localStorage.getItem(`club_recent_${user.email}`);
+      if (recent) {
+        setSessions(JSON.parse(recent));
+      }
+      const savedDebts = localStorage.getItem(`club_debts_${user.email}`);
+      setDebts(savedDebts ? JSON.parse(savedDebts) : {});
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [user]);
 
   const handleLogout = () => {
     localStorage.removeItem("club_user");
     router.push("/login");
   };
 
-  // ── Filter Logic ──────────────────────────────────────
-  const filtered = sessions.filter((s) => {
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Filter sessions
+  const filteredSessions = sessions.filter((s) => {
     const matchDate =
       dateFilter === "today"
         ? isToday(s.endTime)
@@ -398,84 +606,108 @@ export default function PaymentsPage() {
           ? isYesterday(s.endTime)
           : dateFilter === "week"
             ? isThisWeek(s.endTime)
-            : true;
-    const method = s.paymentMethod || "Cash";
-    const matchMethod = methodFilter === "All" || method === methodFilter;
-    return matchDate && matchMethod;
+            : dateFilter === "month"
+              ? isThisMonth(s.endTime)
+              : true;
+
+    if (!matchDate) return false;
+    if (methodFilter === "All") return true;
+    return s.paymentMethod === methodFilter;
   });
 
-  // ── Always today stats for summary cards ─────────────
+  // Today stats
   const todaySessions = sessions.filter((s) => isToday(s.endTime));
-  const todayRevenue = todaySessions.reduce((a, s) => a + s.totalAmount, 0);
-  const todayCash = todaySessions
-    .filter((s) => (s.paymentMethod || "Cash") === "Cash")
-    .reduce((a, s) => a + s.totalAmount, 0);
-  const todayDigital = todaySessions
-    .filter((s) => ["EasyPaisa", "JazzCash"].includes(s.paymentMethod || ""))
-    .reduce((a, s) => a + s.totalAmount, 0);
+  const todayRevenue = getRevenue(todaySessions);
+  const todayCash = getCash(todaySessions);
+  const todayOnline = getOnline(todaySessions);
+  const todayCredit = getUnpaidCredit(todaySessions, debts); // ✅ FIXED: Use actual unpaid debt
+  const todayDebtCollected = getDebtCollected(todaySessions);
 
-  // ── Filtered totals for the pill ─────────────────────
-  const filteredTotal = filtered.reduce((a, s) => a + s.totalAmount, 0);
+  // Count players with debt
+  const todayCreditCount = Object.values(debts).filter((d) => d > 0).length;
 
-  // ── Graphs use filtered data so they respect filters ──
-  const last7Days = Array.from({ length: 7 }, (_, i) => {
+  // Filtered stats
+  const filteredRevenue = getRevenue(filteredSessions);
+  const filteredCash = getCash(filteredSessions);
+  const filteredOnline = getOnline(filteredSessions);
+  const filteredCredit = getUnpaidCredit(filteredSessions, debts); // ✅ FIXED
+
+  // Chart data
+  const chartDays = dateFilter === "month" ? 30 : 7;
+  const chartData = Array.from({ length: chartDays }, (_, i) => {
     const d = new Date();
-    d.setDate(d.getDate() - (6 - i));
-    const label = d.toLocaleDateString("en-PK", { weekday: "short" });
-    const dayTotal = filtered
-      .filter((s) => {
-        const sd = new Date(s.endTime);
-        return (
-          sd.getDate() === d.getDate() &&
-          sd.getMonth() === d.getMonth() &&
-          sd.getFullYear() === d.getFullYear()
-        );
-      })
-      .reduce((a, s) => a + s.totalAmount, 0);
-    return { day: label, revenue: dayTotal };
-  });
+    d.setDate(d.getDate() - (chartDays - 1 - i));
+    d.setHours(0, 0, 0, 0);
 
-  // ── Payment method mix uses filtered data ─────────────
-  const methodMix = ["Cash", "EasyPaisa", "JazzCash", "OnCredit"]
-    .map((m) => ({
-      name: m === "OnCredit" ? "On Credit" : m,
-      value: filtered.filter((s) => (s.paymentMethod || "Cash") === m).length,
-    }))
-    .filter((m) => m.value > 0);
+    const dayStart = d.getTime();
+    const dayEnd = dayStart + 24 * 60 * 60 * 1000;
+
+    const daySessions = sessions.filter(
+      (s) => s.endTime >= dayStart && s.endTime < dayEnd,
+    );
+
+    return {
+      day: d.toLocaleDateString("en-PK", {
+        weekday: chartDays > 7 ? undefined : "short",
+        day: "numeric",
+        month: chartDays > 7 ? "short" : undefined,
+      }),
+      revenue: getRevenue(daySessions),
+    };
+  });
 
   const PIE_COLORS: Record<string, string> = {
     Cash: "#10b981",
     EasyPaisa: "#a855f7",
     JazzCash: "#ef4444",
     "On Credit": "#f97316",
+    "Debt Collected": "#3b82f6",
   };
 
-  // ── Game popularity uses filtered data ────────────────
-  const gamePopularity = Object.entries(
-    filtered.reduce(
+  const methodMix = [
+    { key: "Cash", label: "Cash" },
+    { key: "EasyPaisa", label: "EasyPaisa" },
+    { key: "JazzCash", label: "JazzCash" },
+    { key: "OnCredit", label: "On Credit" },
+    { key: "DebtPayment", label: "Debt Collected" },
+  ]
+    .map((m) => ({
+      name: m.label,
+      value: todaySessions.filter((s) => (s.paymentMethod ?? "Cash") === m.key)
+        .length,
+    }))
+    .filter((m) => m.value > 0);
+
+  const gameStats = filteredSessions
+    .filter((s) => s.gameType !== "Debt Payment")
+    .reduce(
       (acc, s) => {
         acc[s.gameType] = (acc[s.gameType] || 0) + 1;
         return acc;
       },
       {} as Record<string, number>,
-    ),
-  )
-    .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => b.count - a.count);
-
-  const grouped = groupByDate(filtered);
-  const sortedGroups = Object.entries(grouped).sort((a, b) => {
-    const aTime = Math.max(...a[1].map((s) => s.endTime));
-    const bTime = Math.max(...b[1].map((s) => s.endTime));
-    return bTime - aTime;
-  });
-
-  if (!user)
-    return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
-      </div>
     );
+
+  const gamePopularity = Object.entries(gameStats)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  const grouped = groupByDate(filteredSessions);
+  const sortedGroups = Object.entries(grouped).sort(
+    (a, b) =>
+      Math.max(...b[1].map((s) => s.endTime)) -
+      Math.max(...a[1].map((s) => s.endTime)),
+  );
+
+  const periodLabel =
+    dateFilter === "all"
+      ? "All Time"
+      : dateFilter === "month"
+        ? "This Month"
+        : dateFilter === "week"
+          ? "This Week"
+          : dateFilter.charAt(0).toUpperCase() + dateFilter.slice(1);
 
   return (
     <div className="min-h-screen bg-slate-950 flex">
@@ -487,11 +719,8 @@ export default function PaymentsPage() {
       />
 
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
         <header className="sticky top-0 z-10 bg-slate-950/90 backdrop-blur-xl border-b border-slate-700/40 px-4 lg:px-6">
-          <div className="flex items-center justify-between h-18">
-
-            {/* Left */}
+          <div className="flex items-center justify-between h-14">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -501,76 +730,75 @@ export default function PaymentsPage() {
               </button>
               <div className="hidden lg:block w-px h-5 bg-slate-700/60" />
               <div>
-                <h1 className="text-white font-bold text-base leading-tight">Payments</h1>
+                <h1 className="text-white font-bold text-base leading-tight">
+                  Payments
+                </h1>
                 <p className="text-slate-500 text-[11px] leading-tight">
-                  {todaySessions.length} sessions today • Rs. {todayRevenue.toLocaleString()} collected
+                  {filteredSessions.length} records • {periodLabel}
                 </p>
               </div>
             </div>
-
-            {/* Right — revenue pill */}
-            <div className="flex items-center gap-2">
-              <div className="hidden sm:flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-3 py-1.5">
-                <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
-                <span className="text-emerald-400 text-xs font-bold">
-                  Rs. {todayRevenue.toLocaleString()}
-                </span>
-                <span className="text-slate-500 text-[10px]">today</span>
-              </div>
+            <div className="hidden sm:flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-3 py-1.5">
+              <FiTrendingUp className="text-emerald-400 text-xs" />
+              <span className="text-emerald-400 text-xs font-bold">
+                Rs. {todayRevenue.toLocaleString()}
+              </span>
+              <span className="text-slate-500 text-[10px]">today</span>
             </div>
-
           </div>
         </header>
 
         <main className="flex-1 p-4 lg:p-8 space-y-6">
-          {/* Today Summary Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             {[
               {
-                label: "Today's Revenue",
-                value: `Rs. ${todayRevenue.toLocaleString()}`,
+                label: "Total Revenue",
+                value: `Rs. ${filteredRevenue.toLocaleString()}`,
                 icon: FiTrendingUp,
                 color: "emerald",
-                sub: `${todaySessions.length} sessions`,
+                sub: `Cash + Online + Debt`,
               },
               {
-                label: "Sessions Today",
-                value: todaySessions.length,
+                label: "Total Records",
+                value: filteredSessions.length,
                 icon: FiActivity,
                 color: "blue",
-                sub: "Completed",
+                sub: periodLabel,
               },
               {
-                label: "Cash Today",
-                value: `Rs. ${todayCash.toLocaleString()}`,
+                label: "Cash",
+                value: `Rs. ${filteredCash.toLocaleString()}`,
                 icon: FiDollarSign,
                 color: "yellow",
-                sub: "Physical payments",
+                sub: "Cash payments",
               },
               {
-                label: "Digital Today",
-                value: `Rs. ${todayDigital.toLocaleString()}`,
+                label: "Online",
+                value: `Rs. ${filteredOnline.toLocaleString()}`,
                 icon: FiDollarSign,
                 color: "purple",
-                sub: "EasyPaisa & JazzCash",
+                sub: "EasyPaisa / JazzCash",
               },
               {
-                label: "On Credit",
-                value: `Rs. ${todaySessions
-                  .filter((s) => s.paymentMethod === "OnCredit")
-                  .reduce((a, s) => a + s.totalAmount, 0)
-                  .toLocaleString()}`,
+                label: "Unpaid Credit",
+                value: `Rs. ${filteredCredit.toLocaleString()}`,
                 icon: FiAlertTriangle,
                 color: "orange",
-                sub: "Unpaid sessions",
+                sub: "Current debt",
               },
             ].map((s) => (
               <div
                 key={s.label}
-                className="bg-slate-900/60 border border-slate-700/40 rounded-2xl p-5 hover:border-slate-600/60 transition-all"
+                className={`bg-slate-900/60 border rounded-2xl p-4 transition-all ${
+                  s.color === "orange" && filteredCredit > 0
+                    ? "border-orange-500/30 bg-orange-500/5"
+                    : "border-slate-700/40 hover:border-slate-600/60"
+                }`}
               >
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-slate-400 text-xs">{s.label}</p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-slate-400 text-xs font-medium">
+                    {s.label}
+                  </p>
                   <s.icon
                     className={`text-sm ${
                       s.color === "emerald"
@@ -605,329 +833,319 @@ export default function PaymentsPage() {
             ))}
           </div>
 
-          {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-            {/* Date Filter */}
+          {todayCredit > 0 && (
+            <div className="bg-orange-500/5 border border-orange-500/20 rounded-2xl p-4 flex items-start gap-3">
+              <FiAlertTriangle className="text-orange-400 text-base shrink-0 mt-0.5" />
+              <div>
+                <p className="text-orange-400 font-semibold text-sm">
+                  Rs. {todayCredit.toLocaleString()} Unpaid Credit
+                </p>
+                <p className="text-slate-400 text-xs mt-0.5">
+                  {todayCreditCount} player{todayCreditCount !== 1 ? "s" : ""}{" "}
+                  currently owe money. Go to{" "}
+                  <a
+                    href="/members"
+                    className="text-blue-400 underline font-medium"
+                  >
+                    Players page
+                  </a>{" "}
+                  to collect — it will automatically update revenue here.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {todayDebtCollected > 0 && (
+            <div className="bg-blue-500/5 border border-blue-500/20 rounded-2xl p-4 flex items-start gap-3">
+              <FiCheckCircle className="text-blue-400 text-base shrink-0 mt-0.5" />
+              <div>
+                <p className="text-blue-400 font-semibold text-sm">
+                  Rs. {todayDebtCollected.toLocaleString()} Debt Collected Today
+                </p>
+                <p className="text-slate-400 text-xs mt-0.5">
+                  Old credit payments collected and added to today's revenue.
+                </p>
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-wrap">
             <div className="flex items-center bg-slate-900/60 border border-slate-700/40 rounded-xl p-1 gap-1">
-              <FiCalendar className="text-slate-500 text-sm ml-2" />
+              <FiCalendar className="text-slate-500 text-sm ml-2 shrink-0" />
               {(
                 [
                   { key: "today", label: "Today" },
                   { key: "yesterday", label: "Yesterday" },
-                  { key: "week", label: "This Week" },
-                  { key: "all", label: "All Time" },
+                  { key: "week", label: "Week" },
+                  { key: "month", label: "Month" },
+                  { key: "all", label: "All" },
                 ] as { key: DateFilter; label: string }[]
               ).map((f) => (
                 <button
                   key={f.key}
                   onClick={() => setDateFilter(f.key)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                    dateFilter === f.key
-                      ? "bg-blue-600 text-white"
-                      : "text-slate-400 hover:text-white"
-                  }`}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${dateFilter === f.key ? "bg-blue-600 text-white" : "text-slate-400 hover:text-white"}`}
                 >
                   {f.label}
                 </button>
               ))}
             </div>
 
-            {/* Method Filter */}
-            <div className="flex items-center bg-slate-900/60 border border-slate-700/40 rounded-xl p-1 gap-1">
-              <FiFilter className="text-slate-500 text-sm ml-2" />
-              {(["All", "Cash", "EasyPaisa", "JazzCash"] as MethodFilter[]).map(
-                (m) => (
-                  <button
-                    key={m}
-                    onClick={() => setMethodFilter(m)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                      methodFilter === m
-                        ? "bg-blue-600 text-white"
-                        : "text-slate-400 hover:text-white"
-                    }`}
-                  >
-                    {m}
-                  </button>
-                ),
-              )}
+            <div className="flex items-center bg-slate-900/60 border border-slate-700/40 rounded-xl p-1 gap-1 flex-wrap">
+              <FiFilter className="text-slate-500 text-sm ml-2 shrink-0" />
+              {(
+                [
+                  { key: "All", label: "All" },
+                  { key: "Cash", label: "Cash" },
+                  { key: "EasyPaisa", label: "EasyPaisa" },
+                  { key: "JazzCash", label: "JazzCash" },
+                  { key: "OnCredit", label: "On Credit" },
+                ] as { key: MethodFilter; label: string }[]
+              ).map((m) => (
+                <button
+                  key={m.key}
+                  onClick={() => setMethodFilter(m.key)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    methodFilter === m.key
+                      ? m.key === "OnCredit"
+                        ? "bg-orange-500 text-white"
+                        : "bg-blue-600 text-white"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  {m.label}
+                </button>
+              ))}
             </div>
 
-            {/* Filtered Total */}
-            <div className="sm:ml-auto flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-2">
+            <div className="sm:ml-auto flex items-center gap-3 bg-slate-800/50 border border-slate-700/40 rounded-xl px-4 py-2">
               <div className="text-center">
-                <p className="text-slate-400 text-xs">Showing</p>
+                <p className="text-slate-400 text-xs">Revenue</p>
                 <p className="text-emerald-400 font-bold text-sm">
-                  Rs. {filteredTotal.toLocaleString()}
+                  Rs. {filteredRevenue.toLocaleString()}
                 </p>
               </div>
               <div className="w-px h-8 bg-slate-700/50" />
               <div className="text-center">
-                <p className="text-slate-400 text-xs">Sessions</p>
+                <p className="text-slate-400 text-xs">Records</p>
                 <p className="text-white font-bold text-sm">
-                  {filtered.length}
-                </p>
-              </div>
-              <div className="w-px h-8 bg-slate-700/50" />
-              <div className="text-center">
-                <p className="text-slate-400 text-xs">Filter</p>
-                <p className="text-blue-400 font-bold text-sm capitalize">
-                  {dateFilter === "all"
-                    ? "All Time"
-                    : dateFilter === "week"
-                      ? "This Week"
-                      : dateFilter.charAt(0).toUpperCase() +
-                        dateFilter.slice(1)}
+                  {filteredSessions.length}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* ── Graphs Section ── */}
           {sessions.length > 0 && (
-            <div className="space-y-4">
-              {/* Revenue + Method Row */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                {/* 7 Day Revenue Bar Chart */}
-                <div className="lg:col-span-2 bg-slate-900/60 border border-slate-700/40 rounded-2xl p-5">
-                  <div className="mb-4">
-                    <h3 className="text-white font-semibold text-sm">
-                      Revenue — Last 7 Days
-                    </h3>
-                    <p className="text-slate-500 text-xs mt-0.5">
-                      Daily earnings this week
-                    </p>
-                  </div>
-                  <ResponsiveContainer width="100%" height={180}>
-                    <BarChart data={last7Days} barSize={28}>
-                      <XAxis
-                        dataKey="day"
-                        tick={{ fill: "#64748b", fontSize: 11 }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <YAxis
-                        tick={{ fill: "#64748b", fontSize: 10 }}
-                        axisLine={false}
-                        tickLine={false}
-                        tickFormatter={(v) => `${v > 0 ? `Rs.${v}` : "0"}`}
-                        width={50}
-                      />
-                      <Tooltip
-                        cursor={{ fill: "rgba(255,255,255,0.04)" }}
-                        contentStyle={{
-                          backgroundColor: "#0f172a",
-                          border: "1px solid rgba(100,116,139,0.3)",
-                          borderRadius: "12px",
-                          fontSize: "12px",
-                          color: "#fff",
-                        }}
-                        formatter={(value) => [
-                          `Rs. ${value?.toLocaleString()}`,
-                          "Revenue",
-                        ]}
-                      />
-                      <Bar
-                        dataKey="revenue"
-                        fill="#2563eb"
-                        radius={[6, 6, 0, 0]}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <div className="lg:col-span-2 bg-slate-900/60 border border-slate-700/40 rounded-2xl p-5">
+                <div className="mb-4">
+                  <h3 className="text-white font-semibold text-sm">
+                    Revenue Trend — {periodLabel}
+                  </h3>
+                  <p className="text-slate-500 text-xs mt-0.5">
+                    Daily revenue including debt collections
+                  </p>
                 </div>
-
-                {/* Payment Method Donut */}
-                <div className="bg-slate-900/60 border border-slate-700/40 rounded-2xl p-5">
-                  <div className="mb-4">
-                    <h3 className="text-white font-semibold text-sm">
-                      Payment Methods
-                    </h3>
-                    <p className="text-slate-500 text-xs mt-0.5">
-                      How customers pay
-                    </p>
-                  </div>
-                  {methodMix.length === 0 ? (
-                    <div className="flex items-center justify-center h-40">
-                      <p className="text-slate-600 text-xs">No data yet</p>
-                    </div>
-                  ) : (
-                    <ResponsiveContainer width="100%" height={180}>
-                      <PieChart>
-                        <Pie
-                          data={methodMix}
-                          cx="50%"
-                          cy="45%"
-                          innerRadius={45}
-                          outerRadius={70}
-                          paddingAngle={3}
-                          dataKey="value"
-                        >
-                          {methodMix.map((entry, index) => (
-                            <Cell
-                              key={index}
-                              fill={PIE_COLORS[entry.name] || "#64748b"}
-                            />
-                          ))}
-                        </Pie>
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: "#0f172a",
-                            border: "1px solid rgba(100,116,139,0.3)",
-                            borderRadius: "12px",
-                            fontSize: "12px",
-                            color: "#fff",
-                          }}
-                          formatter={(value) => [value, "Sessions"]}
-                        />
-                        <Legend
-                          iconType="circle"
-                          iconSize={8}
-                          formatter={(value) => (
-                            <span
-                              style={{ color: "#94a3b8", fontSize: "11px" }}
-                            >
-                              {value}
-                            </span>
-                          )}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  )}
-                </div>
+                <ResponsiveContainer width="100%" height={180}>
+                  <BarChart
+                    data={chartData}
+                    barSize={chartDays > 7 ? 12 : 28}
+                    style={{ outline: "none", userSelect: "none" }}
+                  >
+                    <XAxis
+                      dataKey="day"
+                      tick={{ fill: "#64748b", fontSize: 10 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fill: "#64748b", fontSize: 10 }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(v) =>
+                        v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v
+                      }
+                      width={40}
+                    />
+                    <Tooltip
+                      content={<BarTooltip />}
+                      cursor={{ fill: "rgba(255,255,255,0.03)" }}
+                    />
+                    <Bar
+                      dataKey="revenue"
+                      fill="#2563eb"
+                      radius={[6, 6, 0, 0]}
+                      style={{ outline: "none" }}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
 
-              {/* Game Popularity */}
-              {gamePopularity.length > 0 && (
-                <div className="bg-slate-900/60 border border-slate-700/40 rounded-2xl p-5">
-                  <div className="mb-4">
-                    <h3 className="text-white font-semibold text-sm">
-                      Game Popularity
-                    </h3>
-                    <p className="text-slate-500 text-xs mt-0.5">
-                      Most played game types
-                    </p>
-                  </div>
-                  <ResponsiveContainer width="100%" height={160}>
-                    <BarChart
-                      data={gamePopularity}
-                      layout="vertical"
-                      barSize={20}
-                      margin={{ left: 10, right: 20 }}
-                    >
-                      <XAxis
-                        type="number"
-                        tick={{ fill: "#64748b", fontSize: 10 }}
-                        axisLine={false}
-                        tickLine={false}
-                        allowDecimals={false}
-                      />
-                      <YAxis
-                        type="category"
-                        dataKey="name"
-                        tick={{ fill: "#94a3b8", fontSize: 11 }}
-                        axisLine={false}
-                        tickLine={false}
-                        width={80}
-                      />
-                      <Tooltip
-                        cursor={{ fill: "rgba(255,255,255,0.04)" }}
-                        contentStyle={{
-                          backgroundColor: "#0f172a",
-                          border: "1px solid rgba(100,116,139,0.3)",
-                          borderRadius: "12px",
-                          fontSize: "12px",
-                          color: "#fff",
-                        }}
-                        formatter={(value) => [value, "Sessions"]}
-                      />
-                      <Bar
-                        dataKey="count"
-                        fill="#10b981"
-                        radius={[0, 6, 6, 0]}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
+              <div className="bg-slate-900/60 border border-slate-700/40 rounded-2xl p-5">
+                <div className="mb-4">
+                  <h3 className="text-white font-semibold text-sm">
+                    Payment Types
+                  </h3>
+                  <p className="text-slate-500 text-xs mt-0.5">
+                    Today's breakdown
+                  </p>
                 </div>
-              )}
+                {methodMix.length === 0 ? (
+                  <div className="flex items-center justify-center h-40">
+                    <p className="text-slate-600 text-xs">No data yet</p>
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={180}>
+                    <PieChart style={{ outline: "none", userSelect: "none" }}>
+                      <Pie
+                        data={methodMix}
+                        cx="50%"
+                        cy="42%"
+                        innerRadius={42}
+                        outerRadius={65}
+                        paddingAngle={3}
+                        dataKey="value"
+                        stroke="none"
+                        style={{ outline: "none" }}
+                      >
+                        {methodMix.map((entry, i) => (
+                          <Cell
+                            key={i}
+                            fill={PIE_COLORS[entry.name] ?? "#64748b"}
+                            stroke="none"
+                            style={{ outline: "none" }}
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip content={<PieTooltip />} />
+                      <Legend
+                        iconType="circle"
+                        iconSize={7}
+                        formatter={(v) => (
+                          <span style={{ color: "#fff", fontSize: "11px" }}>
+                            {v}
+                          </span>
+                        )}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
             </div>
           )}
 
-          {/* Payment Records */}
-          {filtered.length === 0 ? (
+          {gamePopularity.length > 0 && (
+            <div className="bg-slate-900/60 border border-slate-700/40 rounded-2xl p-5">
+              <div className="mb-4">
+                <h3 className="text-white font-semibold text-sm">
+                  Most Played Games
+                </h3>
+                <p className="text-slate-500 text-xs mt-0.5">
+                  Top game types — {periodLabel}
+                </p>
+              </div>
+              <ResponsiveContainer
+                width="100%"
+                height={Math.max(100, gamePopularity.length * 40)}
+              >
+                <BarChart
+                  data={gamePopularity}
+                  layout="vertical"
+                  barSize={18}
+                  margin={{ left: 10, right: 30 }}
+                  style={{ outline: "none", userSelect: "none" }}
+                >
+                  <XAxis
+                    type="number"
+                    tick={{ fill: "#64748b", fontSize: 10 }}
+                    axisLine={false}
+                    tickLine={false}
+                    allowDecimals={false}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    tick={{ fill: "#94a3b8", fontSize: 11 }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={80}
+                  />
+                  <Tooltip
+                    content={<BarTooltip />}
+                    cursor={{ fill: "rgba(255,255,255,0.03)" }}
+                  />
+                  <Bar
+                    dataKey="count"
+                    fill="#10b981"
+                    radius={[0, 6, 6, 0]}
+                    style={{ outline: "none" }}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {filteredSessions.length === 0 ? (
             <div className="bg-slate-900/60 border border-slate-700/40 rounded-2xl p-16 text-center">
               <div className="w-14 h-14 bg-slate-800/50 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <FiClock className="text-slate-600 text-2xl" />
               </div>
-              <p className="text-white font-semibold mb-1">No Payments Found</p>
-              <p className="text-slate-500 text-sm">
-                {dateFilter === "today"
-                  ? "No sessions completed today yet. Start a session on the Tables page."
-                  : "No payments found for this filter."}
+              <p className="text-white font-semibold mb-1">No Records Found</p>
+              <p className="text-slate-500 text-sm mb-6">
+                No payment records match the selected filters.
               </p>
-              {dateFilter === "today" && (
-                <a
-                  href="/tables"
-                  className="inline-flex items-center gap-2 mt-4 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-colors"
-                >
-                  Go to Tables →
-                </a>
-              )}
+              <button
+                onClick={() => {
+                  setDateFilter("today");
+                  setMethodFilter("All");
+                }}
+                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-colors"
+              >
+                Reset Filters
+              </button>
             </div>
           ) : (
             <div className="space-y-6">
               {sortedGroups.map(([dateLabel, daySessions]) => {
-                const dayTotal = daySessions.reduce(
-                  (a, s) => a + s.totalAmount,
-                  0,
-                );
-                const dayCash = daySessions
-                  .filter((s) => (s.paymentMethod || "Cash") === "Cash")
-                  .reduce((a, s) => a + s.totalAmount, 0);
-                const dayDigital = dayTotal - dayCash;
+                const dayRevenue = getRevenue(daySessions);
+                const dayCash = getCash(daySessions);
+                const dayOnline = getOnline(daySessions);
+                const dayCredit = getUnpaidCredit(daySessions, debts); // ✅ FIXED
 
                 return (
                   <div key={dateLabel}>
-                    {/* Date Header */}
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <FiCalendar className="text-slate-500 text-sm" />
-                        <span className="text-slate-300 text-sm font-semibold">
+                        <span className="text-slate-200 text-sm font-bold">
                           {dateLabel}
                         </span>
                         <span className="text-slate-600 text-xs">
-                          {daySessions.length} session
-                          {daySessions.length > 1 ? "s" : ""}
+                          {daySessions.length} record
+                          {daySessions.length !== 1 ? "s" : ""}
                         </span>
                       </div>
                       <span className="text-emerald-400 font-bold text-sm">
-                        Rs. {dayTotal.toLocaleString()}
+                        Rs. {dayRevenue.toLocaleString()}
                       </span>
                     </div>
 
-                    {/* Sessions List */}
                     <div className="bg-slate-900/60 border border-slate-700/40 rounded-2xl overflow-hidden mb-3">
                       {daySessions.map((session) => (
                         <PaymentRow key={session.id} session={session} />
                       ))}
                     </div>
 
-                    {/* Day Summary Footer */}
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                       {[
                         {
-                          label: "Total",
-                          value: `Rs. ${dayTotal.toLocaleString()}`,
+                          label: "Revenue",
+                          value: dayRevenue,
                           color: "emerald",
                         },
-                        {
-                          label: "Cash",
-                          value: `Rs. ${dayCash.toLocaleString()}`,
-                          color: "yellow",
-                        },
-                        {
-                          label: "Digital",
-                          value: `Rs. ${dayDigital.toLocaleString()}`,
-                          color: "purple",
-                        },
+                        { label: "Cash", value: dayCash, color: "yellow" },
+                        { label: "Online", value: dayOnline, color: "purple" },
+                        { label: "Unpaid", value: dayCredit, color: "orange" },
                       ].map((s) => (
                         <div
                           key={s.label}
@@ -942,10 +1160,12 @@ export default function PaymentsPage() {
                                 ? "text-emerald-400"
                                 : s.color === "yellow"
                                   ? "text-yellow-400"
-                                  : "text-purple-400"
+                                  : s.color === "orange"
+                                    ? "text-orange-400"
+                                    : "text-purple-400"
                             }`}
                           >
-                            {s.value}
+                            Rs. {s.value.toLocaleString()}
                           </p>
                         </div>
                       ))}

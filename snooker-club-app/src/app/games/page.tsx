@@ -16,16 +16,12 @@ import {
   FiPlus,
   FiTrash2,
   FiAlertTriangle,
-  FiClock,
-  FiCircle,
   FiToggleLeft,
   FiToggleRight,
-  FiZap,
   FiTarget,
-  FiAward,
-  FiStar,
   FiInfo,
   FiMapPin,
+  FiTrendingUp,
 } from "react-icons/fi";
 import { GiPoolTriangle } from "react-icons/gi";
 
@@ -114,7 +110,7 @@ const navLinks = [
   { label: "Tables", icon: FiSquare, href: "/tables", active: false },
   { label: "Players", icon: FiUsers, href: "/members", active: false },
   { label: "Payments", icon: FiDollarSign, href: "/payments", active: false },
-  { label: "Games", icon: FiSquare, href: "/games", active: true },
+  { label: "Games", icon: FiTarget, href: "/games", active: true },
   { label: "Profile", icon: FiSettings, href: "/profile", active: false },
 ];
 
@@ -195,108 +191,133 @@ const dotColors: Record<string, string> = {
 };
 
 // ─── Icon Renderer ─────────────────────────────────────────
-function GameIcon({
-  icon,
-  className,
-  size = 20,
-}: {
-  icon: string;
-  className?: string;
-  size?: number;
-}) {
-  // SVG ball icons
+function GameIcon({ icon, size = 20 }: { icon: string; size?: number }) {
   if (icon === "1ball")
     return (
-      <svg width={size} height={size} viewBox="0 0 24 24" className={className}>
-        <circle cx="12" cy="12" r="10" fill="#ef4444" />
-        <circle cx="9" cy="9" r="3" fill="rgba(255,255,255,0.25)" />
-        <text
-          x="12"
-          y="16"
-          textAnchor="middle"
-          fill="white"
-          fontSize="9"
-          fontWeight="bold"
-        >
-          1
-        </text>
+      <svg width={size} height={size} viewBox="0 0 40 40">
+        <circle cx="20" cy="22" r="10" fill="#dc2626" />
+        <circle cx="16" cy="18" r="3" fill="rgba(255,255,255,0.25)" />
       </svg>
     );
+
   if (icon === "2ball")
     return (
-      <svg width={size} height={size} viewBox="0 0 24 24" className={className}>
-        <circle cx="7" cy="12" r="7" fill="#fbbf24" />
-        <circle cx="17" cy="12" r="7" fill="#3b82f6" />
-        <circle cx="5" cy="9" r="2" fill="rgba(255,255,255,0.25)" />
-        <circle cx="15" cy="9" r="2" fill="rgba(255,255,255,0.25)" />
+      <svg width={size} height={size} viewBox="0 0 40 40">
+        <circle cx="14" cy="24" r="9" fill="#dc2626" />
+        <circle cx="26" cy="24" r="9" fill="#dc2626" />
+        <circle cx="10.5" cy="20" r="2.5" fill="rgba(255,255,255,0.25)" />
+        <circle cx="22.5" cy="20" r="2.5" fill="rgba(255,255,255,0.25)" />
       </svg>
     );
+
   if (icon === "3ball")
     return (
-      <svg width={size} height={size} viewBox="0 0 24 24" className={className}>
-        <circle cx="12" cy="7" r="6" fill="#ef4444" />
-        <circle cx="6" cy="17" r="6" fill="#fbbf24" />
-        <circle cx="18" cy="17" r="6" fill="#3b82f6" />
-        <circle cx="10" cy="5" r="1.5" fill="rgba(255,255,255,0.25)" />
+      <svg width={size} height={size} viewBox="0 0 40 40">
+        <circle cx="20" cy="14" r="9" fill="#dc2626" />
+        <circle cx="11" cy="28" r="9" fill="#dc2626" />
+        <circle cx="29" cy="28" r="9" fill="#dc2626" />
+        <circle cx="16.5" cy="10.5" r="2.5" fill="rgba(255,255,255,0.25)" />
+        <circle cx="7.5" cy="24.5" r="2.5" fill="rgba(255,255,255,0.25)" />
+        <circle cx="25.5" cy="24.5" r="2.5" fill="rgba(255,255,255,0.25)" />
       </svg>
     );
+
   if (icon === "4ball")
     return (
-      <svg width={size} height={size} viewBox="0 0 24 24" className={className}>
-        <circle cx="7" cy="7" r="5.5" fill="#ef4444" />
-        <circle cx="17" cy="7" r="5.5" fill="#fbbf24" />
-        <circle cx="7" cy="17" r="5.5" fill="#3b82f6" />
-        <circle cx="17" cy="17" r="5.5" fill="#a855f7" />
-        <circle cx="5" cy="5" r="1.5" fill="rgba(255,255,255,0.25)" />
+      <svg width={size} height={size} viewBox="0 0 40 40">
+        <circle cx="20" cy="8" r="8" fill="#dc2626" />
+        <circle cx="12" cy="22" r="8" fill="#dc2626" />
+        <circle cx="28" cy="22" r="8" fill="#dc2626" />
+        <circle cx="20" cy="33" r="7" fill="#dc2626" />
+        <circle cx="16.5" cy="4.5" r="2" fill="rgba(255,255,255,0.25)" />
+        <circle cx="8.5" cy="18.5" r="2" fill="rgba(255,255,255,0.25)" />
+        <circle cx="24.5" cy="18.5" r="2" fill="rgba(255,255,255,0.25)" />
       </svg>
     );
+
   if (icon === "5ball")
     return (
-      <svg width={size} height={size} viewBox="0 0 24 24" className={className}>
-        <circle cx="12" cy="5" r="4.5" fill="#ef4444" />
-        <circle cx="4" cy="13" r="4.5" fill="#fbbf24" />
-        <circle cx="20" cy="13" r="4.5" fill="#3b82f6" />
-        <circle cx="7.5" cy="20" r="4.5" fill="#a855f7" />
-        <circle cx="16.5" cy="20" r="4.5" fill="#10b981" />
-        <circle cx="10" cy="3.5" r="1.2" fill="rgba(255,255,255,0.25)" />
+      <svg width={size} height={size} viewBox="0 0 40 40">
+        <circle cx="20" cy="7" r="7" fill="#dc2626" />
+        <circle cx="13" cy="19" r="7" fill="#dc2626" />
+        <circle cx="27" cy="19" r="7" fill="#dc2626" />
+        <circle cx="7" cy="31" r="7" fill="#dc2626" />
+        <circle cx="20" cy="31" r="7" fill="#dc2626" />
+        <circle cx="16.5" cy="3.5" r="2" fill="rgba(255,255,255,0.25)" />
+        <circle cx="9.5" cy="15.5" r="2" fill="rgba(255,255,255,0.25)" />
+        <circle cx="23.5" cy="15.5" r="2" fill="rgba(255,255,255,0.25)" />
       </svg>
     );
+
   if (icon === "6ball")
     return (
-      <svg width={size} height={size} viewBox="0 0 24 24" className={className}>
-        <circle cx="8" cy="6" r="4.5" fill="#ef4444" />
-        <circle cx="16" cy="6" r="4.5" fill="#fbbf24" />
-        <circle cx="4" cy="14" r="4.5" fill="#3b82f6" />
-        <circle cx="12" cy="14" r="4.5" fill="#a855f7" />
-        <circle cx="20" cy="14" r="4.5" fill="#10b981" />
-        <circle cx="8" cy="21" r="4.5" fill="#f97316" />
-        <circle cx="6" cy="4.5" r="1.2" fill="rgba(255,255,255,0.25)" />
+      <svg width={size} height={size} viewBox="0 0 40 40">
+        <circle cx="20" cy="6" r="6.5" fill="#dc2626" />
+        <circle cx="13.5" cy="17" r="6.5" fill="#dc2626" />
+        <circle cx="26.5" cy="17" r="6.5" fill="#dc2626" />
+        <circle cx="7" cy="28" r="6.5" fill="#dc2626" />
+        <circle cx="20" cy="28" r="6.5" fill="#dc2626" />
+        <circle cx="33" cy="28" r="6.5" fill="#dc2626" />
+        <circle cx="16.5" cy="2.5" r="1.8" fill="rgba(255,255,255,0.25)" />
+        <circle cx="10" cy="13.5" r="1.8" fill="rgba(255,255,255,0.25)" />
+        <circle cx="23" cy="13.5" r="1.8" fill="rgba(255,255,255,0.25)" />
+        <circle cx="3.5" cy="24.5" r="1.8" fill="rgba(255,255,255,0.25)" />
+        <circle cx="16.5" cy="24.5" r="1.8" fill="rgba(255,255,255,0.25)" />
+        <circle cx="29.5" cy="24.5" r="1.8" fill="rgba(255,255,255,0.25)" />
       </svg>
     );
+
   if (icon === "fullframe")
     return (
-      <svg width={size} height={size} viewBox="0 0 24 24" className={className}>
-        {/* Table outline */}
-        <rect x="2" y="5" width="20" height="14" rx="3" fill="#166534" />
-        <rect x="4" y="7" width="16" height="10" rx="2" fill="#15803d" />
-        {/* Pockets */}
-        <circle cx="4" cy="7" r="1.5" fill="#0a0a0a" />
-        <circle cx="20" cy="7" r="1.5" fill="#0a0a0a" />
-        <circle cx="4" cy="17" r="1.5" fill="#0a0a0a" />
-        <circle cx="20" cy="17" r="1.5" fill="#0a0a0a" />
-        <circle cx="12" cy="5.5" r="1.2" fill="#0a0a0a" />
-        <circle cx="12" cy="18.5" r="1.2" fill="#0a0a0a" />
-        {/* Ball */}
-        <circle cx="12" cy="12" r="2.5" fill="#ef4444" />
-        <circle cx="11" cy="11" r="0.7" fill="rgba(255,255,255,0.4)" />
+      <svg width={size} height={size} viewBox="0 0 40 40">
+        <rect x="2" y="6" width="36" height="28" rx="4" fill="#166534" />
+        <rect x="5" y="9" width="30" height="22" rx="2.5" fill="#15803d" />
+        <circle cx="5" cy="9" r="3" fill="#0a0a0a" />
+        <circle cx="35" cy="9" r="3" fill="#0a0a0a" />
+        <circle cx="5" cy="31" r="3" fill="#0a0a0a" />
+        <circle cx="35" cy="31" r="3" fill="#0a0a0a" />
+        <circle cx="20" cy="7" r="2.5" fill="#0a0a0a" />
+        <circle cx="20" cy="33" r="2.5" fill="#0a0a0a" />
+        <circle cx="26" cy="18" r="3" fill="#dc2626" />
+        <circle cx="22.5" cy="23" r="3" fill="#dc2626" />
+        <circle cx="29.5" cy="23" r="3" fill="#dc2626" />
+        <circle cx="24.5" cy="15.5" r="0.8" fill="rgba(255,255,255,0.35)" />
+        <circle cx="13" cy="20" r="3.5" fill="white" />
+        <circle cx="11.5" cy="18.5" r="1" fill="rgba(200,200,200,0.5)" />
       </svg>
     );
-  // Default — clock for per hour
-  const icons: Record<string, React.ElementType> = {
-    clock: FiClock,
-  };
-  const Icon = icons[icon] || FiClock;
-  return <Icon className={className} />;
+
+  return (
+    <svg width={size} height={size} viewBox="0 0 40 40">
+      <circle
+        cx="20"
+        cy="20"
+        r="16"
+        fill="none"
+        stroke="#3b82f6"
+        strokeWidth="2.5"
+      />
+      <circle cx="20" cy="20" r="2" fill="#3b82f6" />
+      <line
+        x1="20"
+        y1="20"
+        x2="20"
+        y2="8"
+        stroke="#3b82f6"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+      <line
+        x1="20"
+        y1="20"
+        x2="28"
+        y2="24"
+        stroke="#3b82f6"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
 }
 
 // ─── Add/Edit Modal ───────────────────────────────────────
@@ -322,6 +343,7 @@ function GameModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.name.trim()) return;
     onSave(form);
     onClose();
   };
@@ -330,9 +352,8 @@ function GameModal({
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-700/50 rounded-2xl w-full max-w-lg shadow-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-700/40">
+      <div className="bg-slate-900 border border-slate-700/50 rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-700/40 sticky top-0 bg-slate-900 z-10">
           <div>
             <h2 className="text-white font-bold text-lg">
               {isEditing ? "Edit Game Type" : "Add New Game Type"}
@@ -353,15 +374,12 @@ function GameModal({
 
         <form onSubmit={handleSubmit}>
           <div className="p-6 space-y-5">
-            {/* Preview + Name Row */}
             <div className="flex items-center gap-4">
-              {/* Live Preview */}
               <div
                 className={`w-16 h-16 rounded-2xl flex items-center justify-center border shrink-0 ${c.badge}`}
               >
-                <GameIcon icon={form.icon} className="text-2xl" />
+                <GameIcon icon={form.icon} size={32} />
               </div>
-              {/* Name */}
               <div className="flex-1">
                 <label className="text-slate-300 text-sm font-medium block mb-1.5">
                   Game Name
@@ -377,9 +395,7 @@ function GameModal({
               </div>
             </div>
 
-            {/* Icon + Color Row */}
             <div className="grid grid-cols-2 gap-4">
-              {/* Icon Picker */}
               <div>
                 <label className="text-slate-300 text-sm font-medium block mb-2">
                   Icon
@@ -392,7 +408,7 @@ function GameModal({
                       onClick={() => setForm({ ...form, icon })}
                       className={`aspect-square rounded-xl flex items-center justify-center transition-all border p-1.5 ${
                         form.icon === icon
-                          ? "bg-blue-600/30 border-blue-500/50"
+                          ? "bg-blue-600/30 border-blue-500/50 scale-105"
                           : "bg-slate-800/50 border-slate-700/40 hover:border-slate-500"
                       }`}
                     >
@@ -402,7 +418,6 @@ function GameModal({
                 </div>
               </div>
 
-              {/* Color Picker */}
               <div>
                 <label className="text-slate-300 text-sm font-medium block mb-2">
                   Color
@@ -420,7 +435,7 @@ function GameModal({
                       }`}
                     >
                       <div
-                        className={`w-4 h-4 rounded-full ${dotColors[color]}`}
+                        className={`w-5 h-5 rounded-full ${dotColors[color]}`}
                       />
                     </button>
                   ))}
@@ -428,10 +443,10 @@ function GameModal({
               </div>
             </div>
 
-            {/* Description */}
             <div>
               <label className="text-slate-300 text-sm font-medium block mb-1.5">
-                Description
+                Description{" "}
+                <span className="text-slate-500 font-normal">(optional)</span>
               </label>
               <input
                 type="text"
@@ -444,7 +459,6 @@ function GameModal({
               />
             </div>
 
-            {/* Rate & Unit */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-slate-300 text-sm font-medium block mb-1.5">
@@ -489,7 +503,6 @@ function GameModal({
               </div>
             </div>
 
-            {/* Quick Presets */}
             <div>
               <p className="text-slate-500 text-xs mb-2">Quick Presets</p>
               <div className="flex gap-2 flex-wrap">
@@ -511,8 +524,7 @@ function GameModal({
             </div>
           </div>
 
-          {/* Footer Buttons */}
-          <div className="flex gap-3 px-6 pb-6">
+          <div className="flex gap-3 px-6 pb-6 sticky bottom-0 bg-slate-900 pt-3 border-t border-slate-700/40">
             <button
               type="button"
               onClick={onClose}
@@ -548,7 +560,7 @@ function DeleteModal({
       <div className="bg-slate-900 border border-slate-700/50 rounded-2xl p-6 w-full max-w-sm shadow-2xl">
         <div className="text-center mb-6">
           <div className="w-14 h-14 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <FiAlertTriangle className="text-red-400 text-2xl" />
+            <FiTrash2 className="text-red-400 text-2xl" />
           </div>
           <h2 className="text-white font-bold text-lg">Delete Game Type?</h2>
           <p className="text-slate-400 text-sm mt-2">
@@ -607,28 +619,26 @@ function GameCard({
         game.enabled ? c.card : "border-slate-700/30 opacity-60"
       }`}
     >
-      {/* Default Badge */}
       {game.isDefault && (
         <span className="absolute top-3 right-3 text-[10px] text-slate-600 bg-slate-800/50 border border-slate-700/40 px-2 py-0.5 rounded-full">
           Default
         </span>
       )}
 
-      {/* Top Row */}
       <div className="flex items-start gap-3 mb-4 pr-10">
-        {/* Icon */}
         <div
-          className={`w-11 h-11 rounded-xl flex items-center justify-center border shrink-0 ${
+          className={`w-12 h-12 rounded-xl flex items-center justify-center border shrink-0 ${
             game.enabled
               ? c.badge
               : "bg-slate-800/50 border-slate-700/40 text-slate-600"
           }`}
         >
-          <GameIcon icon={game.icon} className="text-lg" />
+          <GameIcon icon={game.icon} size={24} />
         </div>
-        {/* Name + Status */}
         <div className="flex-1 min-w-0">
-          <h3 className="text-white font-bold truncate">{game.name}</h3>
+          <h3 className="text-white font-bold truncate text-base">
+            {game.name}
+          </h3>
           <span
             className={`inline-flex items-center gap-1 text-xs font-medium mt-0.5 ${
               game.enabled ? "text-emerald-400" : "text-slate-500"
@@ -640,10 +650,10 @@ function GameCard({
             {game.enabled ? "Active" : "Disabled"}
           </span>
         </div>
-        {/* Toggle */}
         <button
           onClick={() => onToggle(game.id)}
-          className="shrink-0 absolute top-12 right-6"
+          className="shrink-0 absolute top-12 right-5"
+          title={game.enabled ? "Disable game" : "Enable game"}
         >
           {game.enabled ? (
             <FiToggleRight className="text-2xl text-emerald-400 hover:text-emerald-300 transition-colors" />
@@ -653,20 +663,18 @@ function GameCard({
         </button>
       </div>
 
-      {/* Description */}
       {game.description && (
-        <p className="text-slate-400 text-xs mb-4 leading-relaxed">
+        <p className="text-slate-400 text-xs mb-4 leading-relaxed line-clamp-2">
           {game.description}
         </p>
       )}
 
-      {/* Rate Badge */}
       <div
         className={`rounded-xl px-3 py-2.5 mb-4 border flex items-center justify-between ${
           game.enabled ? c.badge : "bg-slate-800/30 border-slate-700/30"
         }`}
       >
-        <span className="text-slate-400 text-xs">{game.unit}</span>
+        <span className="text-slate-400 text-xs capitalize">{game.unit}</span>
         <span
           className={`text-lg font-bold ${game.enabled ? "" : "text-slate-500"}`}
         >
@@ -674,27 +682,139 @@ function GameCard({
         </span>
       </div>
 
-      {/* Actions */}
       <div className="flex items-center gap-2">
         <button
           onClick={() => onEdit(game)}
-          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium border transition-all ${
+          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-medium border transition-all ${
             game.enabled
               ? c.btn
-              : "bg-slate-800/30 border-slate-700/30 text-slate-600 cursor-not-allowed"
+              : "bg-slate-800/30 border-slate-700/30 text-slate-600"
           }`}
-          disabled={!game.enabled}
         >
           <FiEdit2 className="text-xs" /> Edit
         </button>
         <button
           onClick={() => onDelete(game)}
-          className="flex items-center justify-center px-3 py-2 rounded-xl text-xs font-medium border bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20 transition-all"
+          className="flex items-center justify-center px-3 py-2.5 rounded-xl text-xs font-medium border bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20 transition-all"
+          title="Delete game"
         >
           <FiTrash2 className="text-xs" />
         </button>
       </div>
     </div>
+  );
+}
+
+// ─── Sidebar ──────────────────────────────────────────────
+function Sidebar({
+  user,
+  open,
+  onClose,
+  onLogout,
+}: {
+  user: ClubUser;
+  open: boolean;
+  onClose: () => void;
+  onLogout: () => void;
+}) {
+  return (
+    <>
+      {open && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-20 lg:hidden"
+          onClick={onClose}
+        />
+      )}
+      <aside
+        className={`fixed top-0 left-0 h-screen w-64 bg-slate-900/95 backdrop-blur-xl border-r border-slate-700/50 z-30 flex flex-col transition-transform duration-300 ${open ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 lg:sticky lg:top-0 lg:z-auto`}
+      >
+        <div className="px-5 pt-5 pb-4 border-b border-slate-700/50">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/20">
+              <GiPoolTriangle className="text-white text-base" />
+            </div>
+            <div>
+              <p className="text-white font-bold text-sm leading-tight">
+                Snooker Manager
+              </p>
+              <p className="text-blue-400/70 text-[10px] font-medium tracking-wide uppercase">
+                Pro Edition
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="px-4 py-3 border-b border-slate-700/50">
+          <div className="relative bg-gradient-to-br from-blue-600/15 to-blue-500/5 border border-blue-500/20 rounded-xl p-3 overflow-hidden">
+            <div className="absolute top-2 right-2 w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+            <p className="text-white text-sm font-bold truncate pr-4">
+              {user.club_name}
+            </p>
+            <div className="flex items-center gap-2 mt-1.5">
+              <span className="flex items-center gap-1 text-slate-400 text-[10px]">
+                <FiMapPin className="text-[9px]" /> {user.location}
+              </span>
+              <span className="text-slate-600">•</span>
+              <span className="flex items-center gap-1 text-slate-400 text-[10px]">
+                <FiSquare className="text-[9px]" /> {user.tables} Tables
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+          <p className="text-slate-600 text-xs font-semibold uppercase tracking-wider px-3 mb-3">
+            Navigation
+          </p>
+          {navLinks.map((link) => (
+            <a
+              key={link.label}
+              href={link.href}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                link.active
+                  ? "bg-blue-600/20 text-blue-400 border border-blue-500/30"
+                  : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+              }`}
+            >
+              <link.icon className="text-lg shrink-0" />
+              {link.label}
+              {link.active && (
+                <div className="ml-auto w-1.5 h-1.5 bg-blue-400 rounded-full" />
+              )}
+            </a>
+          ))}
+        </nav>
+
+        <div className="p-4 border-t border-slate-700/50">
+          <div className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/40 rounded-xl px-3 py-2.5 mb-3">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0">
+              {user.owner_name.charAt(0)}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-white text-xs font-semibold truncate">
+                {user.owner_name}
+              </p>
+              <p className="text-slate-500 text-[10px] truncate">
+                {user.email}
+              </p>
+            </div>
+            <button
+              onClick={onLogout}
+              className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors shrink-0"
+              title="Logout"
+            >
+              <FiLogOut className="text-sm" />
+            </button>
+          </div>
+          <div className="flex items-center justify-center gap-1.5">
+            <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+            <span className="text-emerald-400/70 text-[10px] font-medium">
+              System Online
+            </span>
+          </div>
+        </div>
+      </aside>
+    </>
   );
 }
 
@@ -732,25 +852,34 @@ export default function GamesPage() {
     localStorage.removeItem("club_user");
     router.push("/login");
   };
+
   const handleAdd = (form: Omit<GameType, "id" | "isDefault">) => {
     persist([
       ...games,
       { ...form, id: `custom-${Date.now()}`, isDefault: false },
     ]);
   };
+
   const handleEdit = (form: Omit<GameType, "id" | "isDefault">) => {
     if (!editGame) return;
     persist(games.map((g) => (g.id === editGame.id ? { ...g, ...form } : g)));
   };
+
   const handleToggle = (id: string) => {
     persist(
       games.map((g) => (g.id === id ? { ...g, enabled: !g.enabled } : g)),
     );
   };
+
   const handleDelete = (id: string) =>
     persist(games.filter((g) => g.id !== id));
 
-  const activeGames = games.filter((g) => g.enabled).length;
+  const activeGames = games.filter((g) => g.enabled);
+  const activeCount = activeGames.length;
+  const avgRate =
+    activeCount > 0
+      ? Math.round(activeGames.reduce((a, g) => a + g.rate, 0) / activeCount)
+      : 0;
 
   if (!user)
     return (
@@ -761,111 +890,16 @@ export default function GamesPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 flex">
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-20 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-      <aside
-        className={`
-        fixed top-0 left-0 h-screen w-64 bg-slate-900/95 backdrop-blur-xl border-r border-slate-700/50
-        z-30 flex flex-col transition-transform duration-300
-        ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 lg:sticky lg:top-0 lg:z-auto
-      `}
-      >
-        {/* Brand */}
-        <div className="px-5 pt-5 pb-4 border-b border-slate-700/50">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/20">
-              <GiPoolTriangle className="text-white text-base" />
-            </div>
-            <div>
-              <p className="text-white font-bold text-sm leading-tight">
-                Snooker Manager
-              </p>
-              <p className="text-blue-400/70 text-[10px] font-medium tracking-wide uppercase">
-                Pro Edition
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Club Info */}
-        <div className="px-4 py-3 border-b border-slate-700/50">
-          <div className="relative bg-gradient-to-br from-blue-600/15 to-blue-500/5 border border-blue-500/20 rounded-xl p-3 overflow-hidden">
-            {/* Decorative dot */}
-            <div className="absolute top-2 right-2 w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-            <p className="text-white text-sm font-bold truncate pr-4">
-              {user.club_name}
-            </p>
-            <div className="flex items-center gap-2 mt-1.5">
-              <span className="flex items-center gap-1 text-slate-400 text-[10px]">
-                <FiMapPin className="text-[9px]" /> {user.location}
-              </span>
-              <span className="text-slate-600">•</span>
-              <span className="flex items-center gap-1 text-slate-400 text-[10px]">
-                <FiSquare className="text-[9px]" /> {user.tables} Tables
-              </span>
-            </div>
-          </div>
-        </div>
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          <p className="text-slate-600 text-xs font-semibold uppercase tracking-wider px-3 mb-3">
-            Navigation
-          </p>
-          {navLinks.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                link.active
-                  ? "bg-blue-600/20 text-blue-400 border border-blue-500/30"
-                  : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-              }`}
-            >
-              <link.icon className="text-lg shrink-0" />
-              {link.label}
-              {link.active && (
-                <div className="ml-auto w-1.5 h-1.5 bg-blue-400 rounded-full" />
-              )}
-            </a>
-          ))}
-        </nav>
-        <div className="p-4 border-t border-slate-700/50">
-          <div className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/40 rounded-xl px-3 py-2.5 mb-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 shadow shadow-blue-500/30">
-              {user.owner_name.charAt(0)}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-white text-xs font-semibold truncate">
-                {user.owner_name}
-              </p>
-              <p className="text-slate-500 text-[10px] truncate">
-                {user.email}
-              </p>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors shrink-0"
-              title="Logout"
-            >
-              <FiLogOut className="text-sm" />
-            </button>
-          </div>
-          <div className="flex items-center justify-center gap-1.5">
-            <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-            <span className="text-emerald-400/70 text-[10px] font-medium">
-              System Online
-            </span>
-          </div>
-        </div>
-      </aside>
+      <Sidebar
+        user={user}
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        onLogout={handleLogout}
+      />
 
       <div className="flex-1 flex flex-col min-w-0">
         <header className="sticky top-0 z-10 bg-slate-950/90 backdrop-blur-xl border-b border-slate-700/40 px-4 lg:px-6">
-          <div className="flex items-center justify-between h-18">
-            {/* Left */}
+          <div className="flex items-center justify-between h-14">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -879,18 +913,17 @@ export default function GamesPage() {
                   Game Types
                 </h1>
                 <p className="text-slate-500 text-[11px] leading-tight">
-                  {activeGames} active • {games.length - activeGames} disabled •{" "}
+                  {activeCount} active • {games.length - activeCount} disabled •{" "}
                   {games.length} total
                 </p>
               </div>
             </div>
 
-            {/* Right */}
             <div className="flex items-center gap-2">
               <div className="hidden sm:flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-3 py-1.5">
                 <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
                 <span className="text-emerald-400 text-xs font-medium">
-                  {activeGames} Active
+                  {activeCount} Active
                 </span>
               </div>
               <button
@@ -906,31 +939,43 @@ export default function GamesPage() {
         </header>
 
         <main className="flex-1 p-4 lg:p-8 space-y-6">
-          {/* Info Banner */}
-          <div className="bg-blue-500/5 border border-blue-500/20 rounded-2xl p-4 flex items-center gap-3">
-            <FiInfo className="text-blue-400 text-lg shrink-0" />
-            <p className="text-slate-400 text-sm">
-              Add, edit or disable game types based on what your club offers.
-              Set your own rates. Changes are saved automatically.
-            </p>
+          <div className="bg-blue-500/5 border border-blue-500/20 rounded-2xl p-4 flex items-start gap-3">
+            <FiInfo className="text-blue-400 text-lg shrink-0 mt-0.5" />
+            <div>
+              <p className="text-slate-300 text-sm font-medium">
+                Manage Your Game Types
+              </p>
+              <p className="text-slate-400 text-xs mt-1">
+                Add, edit, or disable game types based on what your club offers.
+                Set custom rates and billing units. Changes save automatically.
+              </p>
+            </div>
           </div>
 
-          {/* Summary Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { label: "Total Games", value: games.length, color: "blue" },
-              { label: "Active", value: activeGames, color: "emerald" },
+              {
+                label: "Total Games",
+                value: games.length,
+                icon: FiTarget,
+                color: "blue",
+              },
+              {
+                label: "Active",
+                value: activeCount,
+                icon: FiCheck,
+                color: "emerald",
+              },
               {
                 label: "Disabled",
-                value: games.length - activeGames,
+                value: games.length - activeCount,
+                icon: FiToggleLeft,
                 color: "red",
               },
               {
-                label: "Lowest Rate",
-                value:
-                  games.filter((g) => g.enabled).length > 0
-                    ? `Rs. ${Math.min(...games.filter((g) => g.enabled).map((g) => g.rate))}`
-                    : "N/A",
+                label: "Avg. Rate",
+                value: avgRate > 0 ? `Rs. ${avgRate}` : "N/A",
+                icon: FiTrendingUp,
                 color: "purple",
               },
             ].map((s) => (
@@ -938,7 +983,22 @@ export default function GamesPage() {
                 key={s.label}
                 className="bg-slate-900/60 border border-slate-700/40 rounded-2xl p-4"
               >
-                <p className="text-slate-400 text-xs mb-1">{s.label}</p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-slate-400 text-xs font-medium">
+                    {s.label}
+                  </p>
+                  <s.icon
+                    className={`text-sm ${
+                      s.color === "blue"
+                        ? "text-blue-400"
+                        : s.color === "emerald"
+                          ? "text-emerald-400"
+                          : s.color === "red"
+                            ? "text-red-400"
+                            : "text-purple-400"
+                    }`}
+                  />
+                </div>
                 <p
                   className={`text-xl font-bold ${
                     s.color === "blue"
@@ -956,11 +1016,10 @@ export default function GamesPage() {
             ))}
           </div>
 
-          {/* Games Grid */}
           {games.length === 0 ? (
             <div className="bg-slate-900/60 border border-slate-700/40 border-dashed rounded-2xl p-16 text-center">
               <div className="w-14 h-14 bg-slate-800/50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <FiSquare className="text-slate-600 text-2xl" />
+                <FiTarget className="text-slate-600 text-2xl" />
               </div>
               <p className="text-white font-semibold mb-1">No Game Types Yet</p>
               <p className="text-slate-500 text-sm mb-6">
@@ -979,15 +1038,14 @@ export default function GamesPage() {
                 <GameCard
                   key={game.id}
                   game={game}
-                  onEdit={(g) => setEditGame(g)}
+                  onEdit={setEditGame}
                   onToggle={handleToggle}
-                  onDelete={(g) => setDeleteGame(g)}
+                  onDelete={setDeleteGame}
                 />
               ))}
             </div>
           )}
 
-          {/* Rate Table */}
           {games.length > 0 && (
             <div className="bg-slate-900/60 border border-slate-700/40 rounded-2xl overflow-hidden">
               <div className="px-6 py-4 border-b border-slate-700/40">
@@ -1023,9 +1081,9 @@ export default function GamesPage() {
                         <td className="px-6 py-3.5">
                           <div className="flex items-center gap-2.5">
                             <div
-                              className={`w-7 h-7 rounded-lg flex items-center justify-center border ${colorMap[game.color].badge}`}
+                              className={`w-8 h-8 rounded-lg flex items-center justify-center border ${colorMap[game.color].badge}`}
                             >
-                              <GameIcon icon={game.icon} className="text-xs" />
+                              <GameIcon icon={game.icon} size={20} />
                             </div>
                             <span className="text-white text-sm font-medium">
                               {game.name}
@@ -1043,13 +1101,13 @@ export default function GamesPage() {
                           </span>
                         </td>
                         <td className="px-6 py-3.5 hidden md:table-cell">
-                          <span className="text-slate-400 text-sm">
+                          <span className="text-slate-400 text-sm capitalize">
                             {game.unit}
                           </span>
                         </td>
                         <td className="px-6 py-3.5">
                           <span
-                            className={`text-xs px-2.5 py-1 rounded-lg border ${
+                            className={`text-xs px-2.5 py-1 rounded-lg border font-medium ${
                               game.enabled
                                 ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
                                 : "bg-slate-800/50 text-slate-500 border-slate-700/40"

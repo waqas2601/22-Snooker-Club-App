@@ -19,6 +19,8 @@ import {
   FiMinus,
   FiAlertTriangle,
   FiMapPin,
+  FiTarget,
+  FiCheckCircle,
 } from "react-icons/fi";
 import { GiPoolTriangle } from "react-icons/gi";
 
@@ -65,8 +67,14 @@ interface CompletedSession {
   totalAmount: number;
   splits: PaymentSplit[];
   endTime: number;
-  paymentMethod?: "Cash" | "EasyPaisa" | "JazzCash" | "OnCredit";
+  paymentMethod?:
+    | "Cash"
+    | "EasyPaisa"
+    | "JazzCash"
+    | "OnCredit"
+    | "DebtPayment";
   creditPlayerName?: string;
+  settledMethod?: "Cash" | "EasyPaisa" | "JazzCash";
 }
 
 interface Table {
@@ -106,7 +114,7 @@ const navLinks = [
   { label: "Tables", icon: FiSquare, href: "/tables", active: true },
   { label: "Players", icon: FiUsers, href: "/members", active: false },
   { label: "Payments", icon: FiDollarSign, href: "/payments", active: false },
-  { label: "Games", icon: FiSquare, href: "/games", active: false },
+  { label: "Games", icon: FiTarget, href: "/games", active: false },
   { label: "Profile", icon: FiSettings, href: "/profile", active: false },
 ];
 
@@ -134,16 +142,9 @@ function SnookerTableSVG({
       className="w-full h-auto"
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Outer wooden frame */}
       <rect x="2" y="2" width="196" height="126" rx="10" fill={borderColor} />
-
-      {/* Cushion border */}
       <rect x="10" y="10" width="180" height="110" rx="7" fill={cushionColor} />
-
-      {/* Felt surface */}
       <rect x="20" y="18" width="160" height="94" rx="3" fill={feltColor} />
-
-      {/* Felt texture lines */}
       <line
         x1="20"
         y1="65"
@@ -162,8 +163,6 @@ function SnookerTableSVG({
         strokeWidth="0.5"
         opacity="0.3"
       />
-
-      {/* Baulk line */}
       <line
         x1="60"
         y1="18"
@@ -173,41 +172,29 @@ function SnookerTableSVG({
         strokeWidth="0.8"
         opacity="0.4"
       />
-
-      {/* D semicircle */}
       <path
-        d={`M 60 55 A 15 15 0 0 1 60 75`}
+        d="M 60 55 A 15 15 0 0 1 60 75"
         fill="none"
         stroke={feltLight}
         strokeWidth="0.8"
         opacity="0.4"
       />
-
-      {/* Corner Pockets */}
       <circle cx="20" cy="18" r="7" fill={pocketColor} />
       <circle cx="180" cy="18" r="7" fill={pocketColor} />
       <circle cx="20" cy="112" r="7" fill={pocketColor} />
       <circle cx="180" cy="112" r="7" fill={pocketColor} />
-
-      {/* Middle Pockets */}
       <circle cx="100" cy="12" r="6" fill={pocketColor} />
       <circle cx="100" cy="118" r="6" fill={pocketColor} />
-
-      {/* Pocket highlights */}
       <circle cx="20" cy="18" r="4" fill="#1a1a1a" />
       <circle cx="180" cy="18" r="4" fill="#1a1a1a" />
       <circle cx="20" cy="112" r="4" fill="#1a1a1a" />
       <circle cx="180" cy="112" r="4" fill="#1a1a1a" />
       <circle cx="100" cy="12" r="3.5" fill="#1a1a1a" />
       <circle cx="100" cy="118" r="3.5" fill="#1a1a1a" />
-
-      {/* Spot dots on felt */}
       <circle cx="150" cy="65" r="2" fill={feltLight} opacity="0.6" />
       <circle cx="100" cy="65" r="1.5" fill={feltLight} opacity="0.5" />
       <circle cx="60" cy="65" r="1.5" fill={feltLight} opacity="0.5" />
       <circle cx="40" cy="65" r="1.5" fill={feltLight} opacity="0.5" />
-
-      {/* Pulse animation ring when occupied */}
       {occupied && pulse && (
         <circle
           cx="100"
@@ -232,8 +219,6 @@ function SnookerTableSVG({
           />
         </circle>
       )}
-
-      {/* Table number badge */}
       <rect
         x="82"
         y="54"
@@ -267,6 +252,7 @@ function PlayerSearchInput({
   onRemove,
   savedPlayers,
   canRemove,
+  occupiedPlayers,
 }: {
   index: number;
   value: string;
@@ -274,6 +260,7 @@ function PlayerSearchInput({
   onRemove: () => void;
   savedPlayers: Player[];
   canRemove: boolean;
+  occupiedPlayers: Set<string>;
 }) {
   const [focused, setFocused] = useState(false);
   const suggestions = savedPlayers.filter(
@@ -300,27 +287,41 @@ function PlayerSearchInput({
           />
           {focused && suggestions.length > 0 && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-700/50 rounded-xl overflow-hidden z-10 shadow-xl">
-              {suggestions.slice(0, 4).map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onMouseDown={() => onChange(p.name)}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-700/50 transition-colors text-left"
-                >
-                  <div className="w-7 h-7 bg-blue-600/20 rounded-full flex items-center justify-center shrink-0">
-                    <span className="text-blue-400 text-xs font-bold">
-                      {p.name.charAt(0)}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-white text-sm font-medium">{p.name}</p>
-                    {p.phone && (
-                      <p className="text-slate-500 text-xs">{p.phone}</p>
+              {suggestions.slice(0, 4).map((p) => {
+                const isOccupied = occupiedPlayers.has(p.name);
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onMouseDown={() => !isOccupied && onChange(p.name)}
+                    disabled={isOccupied}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 transition-colors text-left ${
+                      isOccupied
+                        ? "bg-slate-800/50 cursor-not-allowed opacity-50"
+                        : "hover:bg-slate-700/50"
+                    }`}
+                  >
+                    <div className="w-7 h-7 bg-blue-600/20 rounded-full flex items-center justify-center shrink-0">
+                      <span className="text-blue-400 text-xs font-bold">
+                        {p.name.charAt(0)}
+                      </span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-white text-sm font-medium">{p.name}</p>
+                      {p.phone && (
+                        <p className="text-slate-500 text-xs">{p.phone}</p>
+                      )}
+                    </div>
+                    {isOccupied ? (
+                      <span className="text-red-400 text-[10px] font-medium bg-red-500/10 px-2 py-0.5 rounded">
+                        Playing
+                      </span>
+                    ) : (
+                      <FiSearch className="text-slate-500 text-xs" />
                     )}
-                  </div>
-                  <FiSearch className="ml-auto text-slate-500 text-xs" />
-                </button>
-              ))}
+                  </button>
+                );
+              })}
               <div className="px-3 py-2 border-t border-slate-700/40">
                 <p className="text-slate-600 text-xs">
                   Or continue typing for walk-in player
@@ -348,12 +349,14 @@ function StartSessionModal({
   table,
   savedPlayers,
   gameTypes,
+  occupiedPlayers,
   onClose,
   onStart,
 }: {
   table: Table;
   savedPlayers: Player[];
   gameTypes: GameType[];
+  occupiedPlayers: Set<string>;
   onClose: () => void;
   onStart: (
     tableId: number,
@@ -367,16 +370,55 @@ function StartSessionModal({
   const [selectedGame, setSelectedGame] = useState<GameType | null>(
     gameTypes.find((g) => g.enabled) || null,
   );
+  const [validationError, setValidationError] = useState("");
+
   const activeGames = gameTypes.filter((g) => g.enabled);
 
   const handleStart = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedGame) return;
+    setValidationError("");
+
+    if (!selectedGame) {
+      setValidationError("Please select a game type");
+      return;
+    }
+
     const filled = playerNames.filter((n) => n.trim());
-    if (filled.length < 1) return;
+
+    // Validation 1: At least 1 player
+    if (filled.length < 1) {
+      setValidationError("At least 1 player is required");
+      return;
+    }
+
+    // Validation 2: No duplicate names
+    const uniqueNames = new Set(filled.map((n) => n.trim().toLowerCase()));
+    if (uniqueNames.size !== filled.length) {
+      setValidationError("Duplicate player names are not allowed");
+      return;
+    }
+
+    // Validation 3: Check if any registered player is already playing
+    const conflictingPlayers: string[] = [];
+    filled.forEach((name) => {
+      const saved = savedPlayers.find(
+        (p) => p.name.toLowerCase() === name.trim().toLowerCase(),
+      );
+      if (saved && occupiedPlayers.has(saved.name)) {
+        conflictingPlayers.push(saved.name);
+      }
+    });
+
+    if (conflictingPlayers.length > 0) {
+      setValidationError(
+        `${conflictingPlayers.join(", ")} ${conflictingPlayers.length > 1 ? "are" : "is"} already playing on another table`,
+      );
+      return;
+    }
+
     const players: SessionPlayer[] = filled.map((name) => {
       const saved = savedPlayers.find(
-        (p) => p.name.toLowerCase() === name.toLowerCase(),
+        (p) => p.name.toLowerCase() === name.trim().toLowerCase(),
       );
       return {
         name: saved ? saved.name : name.trim(),
@@ -384,6 +426,7 @@ function StartSessionModal({
         playerId: saved?.id,
       };
     });
+
     onStart(
       table.id,
       players,
@@ -402,7 +445,9 @@ function StartSessionModal({
         <div className="flex items-center justify-between p-6 border-b border-slate-700/40">
           <div>
             <h2 className="text-white font-bold text-lg">Start Session</h2>
-            <p className="text-slate-400 text-xs mt-0.5">Table {table.id}</p>
+            <p className="text-slate-400 text-xs mt-0.5">
+              {table.name || `Table ${table.id}`}
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -412,6 +457,14 @@ function StartSessionModal({
           </button>
         </div>
         <form onSubmit={handleStart} className="p-6 space-y-6">
+          {/* Validation Error */}
+          {validationError && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 flex items-start gap-2">
+              <FiAlertTriangle className="text-red-400 text-sm shrink-0 mt-0.5" />
+              <p className="text-red-400 text-sm">{validationError}</p>
+            </div>
+          )}
+
           {/* Game Type */}
           <div>
             <label className="text-slate-300 text-sm font-semibold block mb-3">
@@ -436,7 +489,7 @@ function StartSessionModal({
                     onClick={() => setSelectedGame(game)}
                     className={`p-3 rounded-xl border text-left transition-all ${
                       selectedGame?.id === game.id
-                        ? "bg-blue-600/20 border-blue-500/50 ring-1 ring-blue-500/30"
+                        ? "bg-blue-600/30 border-blue-500/50 ring-1 ring-blue-500/30"
                         : "bg-slate-800/50 border-slate-700/40 hover:border-slate-600"
                     }`}
                   >
@@ -453,6 +506,7 @@ function StartSessionModal({
               </div>
             )}
           </div>
+
           {/* Players */}
           <div>
             <div className="flex items-center justify-between mb-3">
@@ -488,13 +542,15 @@ function StartSessionModal({
                   }
                   savedPlayers={savedPlayers}
                   canRemove={playerNames.length > 2}
+                  occupiedPlayers={occupiedPlayers}
                 />
               ))}
             </div>
             <p className="text-slate-600 text-xs mt-2">
-              Min 2 players • Max 4 players
+              Min 1 player • Max 4 players
             </p>
           </div>
+
           {/* Summary */}
           {selectedGame && filledCount > 0 && (
             <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 space-y-2">
@@ -517,6 +573,7 @@ function StartSessionModal({
               </div>
             </div>
           )}
+
           <div className="flex gap-3">
             <button
               type="button"
@@ -539,7 +596,7 @@ function StartSessionModal({
   );
 }
 
-// ─── End Session Modal ─────────────────────────────────────
+// ─── End Session Modal (same as before but with fixed credit handling) ───
 function EndSessionModal({
   table,
   elapsed,
@@ -558,12 +615,12 @@ function EndSessionModal({
   ) => void;
 }) {
   const session = table.session!;
-  const totalBill = calcBill(session, elapsed);
+  const [frozenElapsed] = useState(elapsed);
+  const totalBill = calcBill(session, frozenElapsed);
+
   const playerCount = session.players.length;
   type SplitMode = "loser" | "equal" | "teams" | "custom";
-  const [splitMode, setSplitMode] = useState<SplitMode>(
-    playerCount < 3 ? "equal" : "equal",
-  );
+  const [splitMode, setSplitMode] = useState<SplitMode>("equal");
   const [loserIndex, setLoserIndex] = useState(0);
   const [losingTeam, setLosingTeam] = useState<"A" | "B">("B");
   const [teamAssignments, setTeamAssignments] = useState<
@@ -583,7 +640,20 @@ function EndSessionModal({
     "Cash" | "EasyPaisa" | "JazzCash" | "OnCredit"
   >("Cash");
   const [creditPlayerId, setCreditPlayerId] = useState<string>("");
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [collectedData, setCollectedData] = useState<{
+    splits: PaymentSplit[];
+    method: string;
+    creditName?: string;
+  } | null>(null);
+
   const registeredPlayers = session.players.filter((p) => p.isRegistered);
+  const loserIsRegistered =
+    splitMode === "loser" && session.players[loserIndex]?.isRegistered;
+  const canUseCreditForLoser = splitMode === "loser" && loserIsRegistered;
+  const canUseCreditGeneral =
+    splitMode !== "loser" && registeredPlayers.length > 0;
+  const canUseCredit = canUseCreditForLoser || canUseCreditGeneral;
 
   const getSplits = (): PaymentSplit[] => {
     if (splitMode === "loser")
@@ -624,12 +694,200 @@ function EndSessionModal({
         0,
     );
 
+  const showCreditSelector =
+    paymentMethod === "OnCredit" &&
+    splitMode !== "loser" &&
+    registeredPlayers.length > 0;
+
   const collectDisabled =
     (splitMode === "custom" && customTotal !== totalBill) ||
     teamsInvalid ||
     (paymentMethod === "OnCredit" &&
-      registeredPlayers.length > 0 &&
-      !creditPlayerId);
+      ((splitMode === "loser" && !loserIsRegistered) ||
+        (splitMode !== "loser" &&
+          registeredPlayers.length > 0 &&
+          !creditPlayerId)));
+
+  const handleCollect = () => {
+    if (collectDisabled) return;
+
+    let creditName: string | undefined;
+
+    if (paymentMethod === "OnCredit") {
+      if (splitMode === "loser") {
+        creditName = session.players[loserIndex].name;
+      } else {
+        const creditPlayer = registeredPlayers.find(
+          (p) => (p.playerId || p.name) === creditPlayerId,
+        );
+        creditName = creditPlayer?.name;
+      }
+    }
+
+    const splits = getSplits();
+    setCollectedData({ splits, method: paymentMethod, creditName });
+    setShowSuccess(true);
+    onEnd(table.id, splits, totalBill, paymentMethod, creditName);
+  };
+
+  if (showSuccess && collectedData) {
+    const isCredit = collectedData.method === "OnCredit";
+
+    return (
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="bg-slate-900 border border-slate-700/50 rounded-2xl w-full max-w-md shadow-2xl">
+          {/* Header */}
+          <div className="p-6 text-center border-b border-slate-700/40">
+            <div
+              className={`w-16 h-16 ${isCredit ? "bg-orange-500/10 border-orange-500/20" : "bg-emerald-500/10 border-emerald-500/20"} border rounded-full flex items-center justify-center mx-auto mb-4`}
+            >
+              {isCredit ? (
+                <FiAlertTriangle className="text-orange-400 text-3xl" />
+              ) : (
+                <FiCheckCircle className="text-emerald-400 text-3xl" />
+              )}
+            </div>
+            <h2 className="text-white font-bold text-lg">
+              {isCredit ? "Session Ended (On Credit)" : "Payment Collected!"}
+            </h2>
+            <p className="text-slate-400 text-sm mt-1">
+              {table.name || `Table ${table.id}`}
+            </p>
+          </div>
+
+          {/* Body */}
+          <div className="p-5 space-y-4">
+            {/* Credit Warning */}
+            {isCredit && (
+              <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-3">
+                <p className="text-orange-400 text-xs flex items-start gap-2">
+                  <FiAlertTriangle className="shrink-0 mt-0.5" />
+                  <span>
+                    <strong>Rs. {totalBill.toLocaleString()}</strong> is{" "}
+                    <strong>NOT in revenue yet</strong>. It will be added when{" "}
+                    <strong>{collectedData.creditName}</strong> pays from the
+                    Players page.
+                  </span>
+                </p>
+              </div>
+            )}
+
+            {/* Summary Card */}
+            <div className="bg-slate-800/50 border border-slate-700/40 rounded-xl p-4 space-y-2.5">
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-400">Duration</span>
+                <span className="text-white font-medium">
+                  {formatTime(frozenElapsed)}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-400">Game</span>
+                <span className="text-white font-medium">
+                  {session.gameType}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-400">Payment</span>
+                <span
+                  className={`font-medium ${isCredit ? "text-orange-400" : "text-emerald-400"}`}
+                >
+                  {isCredit ? "On Credit" : collectedData.method}
+                </span>
+              </div>
+              {collectedData.creditName && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-400">Debtor</span>
+                  <span className="text-orange-400 font-medium">
+                    {collectedData.creditName}
+                  </span>
+                </div>
+              )}
+              <div className="border-t border-slate-700/40 pt-2.5 flex justify-between items-center">
+                <span className="text-slate-400 text-sm">Total</span>
+                <span
+                  className={`font-bold text-xl ${isCredit ? "text-orange-400" : "text-emerald-400"}`}
+                >
+                  Rs. {totalBill.toLocaleString()}
+                </span>
+              </div>
+            </div>
+
+            {/* Player Splits */}
+            <div className="space-y-2">
+              <p className="text-slate-500 text-xs font-medium uppercase tracking-wider">
+                Split Breakdown
+              </p>
+              {collectedData.splits.map((s, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between bg-slate-800/30 rounded-lg px-3 py-2"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 bg-blue-600/20 rounded-full flex items-center justify-center">
+                      <span className="text-blue-400 text-[10px] font-bold">
+                        {s.playerName.charAt(0)}
+                      </span>
+                    </div>
+                    <span className="text-white text-sm">{s.playerName}</span>
+                  </div>
+                  {s.amount === 0 ? (
+                    <span className="text-emerald-400 text-xs font-medium bg-emerald-500/10 px-2 py-0.5 rounded">
+                      Won
+                    </span>
+                  ) : (
+                    <span className="text-white text-sm font-semibold">
+                      Rs. {s.amount.toLocaleString()}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-2">
+              {isCredit ? (
+                <>
+                  <a
+                    href="/members"
+                    className="flex-1 flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-700 text-white py-3 rounded-xl text-sm font-medium transition-colors"
+                  >
+                    <FiUsers className="text-base" />
+                    Manage Debt
+                  </a>
+                  <button
+                    onClick={onClose}
+                    className="flex-1 flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl text-sm font-medium transition-colors"
+                  >
+                    <FiSquare className="text-base" />
+                    Back
+                  </button>
+                </>
+              ) : (
+                <>
+                  <a
+                    href="/payments"
+                    className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl text-sm font-medium transition-colors"
+                  >
+                    <FiDollarSign className="text-base" />
+                    Payments
+                  </a>
+                  <button
+                    onClick={onClose}
+                    className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl text-sm font-medium transition-colors"
+                  >
+                    <FiCheckCircle className="text-base" />
+                    Done
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  // ... (rest of EndSessionModal - same as before, keeping all the split logic UI)
+  // I'll continue with the rest in the next part due to length...
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -638,7 +896,8 @@ function EndSessionModal({
           <div>
             <h2 className="text-white font-bold text-lg">End Session</h2>
             <p className="text-slate-400 text-xs mt-0.5">
-              Table {table.id} • {formatTime(elapsed)} played
+              {table.name || `Table ${table.id}`} • {formatTime(frozenElapsed)}{" "}
+              played
             </p>
           </div>
           <button
@@ -661,9 +920,10 @@ function EndSessionModal({
               <span>
                 {session.gameType} • {session.players.length} Players
               </span>
-              <span>{formatTime(elapsed)}</span>
+              <span>{formatTime(frozenElapsed)}</span>
             </div>
           </div>
+
           {/* Players */}
           <div>
             <p className="text-slate-400 text-xs font-medium mb-2">Players</p>
@@ -688,6 +948,7 @@ function EndSessionModal({
               ))}
             </div>
           </div>
+
           {/* Split Mode */}
           <div>
             <p className="text-slate-300 text-sm font-semibold mb-3">
@@ -729,18 +990,19 @@ function EndSessionModal({
                     </p>
                   </button>
                 ))}
-              {teamsInvalid && (
-                <p className="text-orange-400 text-xs flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/20 rounded-lg px-3 py-2">
-                  <FiAlertTriangle className="text-xs shrink-0" />
-                  Both teams must have at least one player
-                </p>
-              )}
             </div>
+
+            {teamsInvalid && (
+              <p className="text-orange-400 text-xs flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/20 rounded-lg px-3 py-2 mb-3">
+                <FiAlertTriangle className="text-xs shrink-0" />
+                Both teams must have at least one player
+              </p>
+            )}
 
             {splitMode === "loser" && (
               <div className="space-y-2">
                 <p className="text-slate-400 text-xs mb-2">
-                  Who lost? (pays Rs. {totalBill})
+                  Who lost? (pays Rs. {totalBill.toLocaleString()})
                 </p>
                 {session.players.map((p, i) => (
                   <button
@@ -762,13 +1024,38 @@ function EndSessionModal({
                     >
                       {p.name}
                     </span>
+                    {p.isRegistered && (
+                      <span className="text-blue-400 text-[10px]">
+                        ★ Registered
+                      </span>
+                    )}
                     {loserIndex === i && (
                       <span className="text-red-400 text-xs font-bold">
-                        Rs. {totalBill}
+                        Rs. {totalBill.toLocaleString()}
                       </span>
                     )}
                   </button>
                 ))}
+                {paymentMethod === "OnCredit" && !loserIsRegistered && (
+                  <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-3 mt-2">
+                    <p className="text-orange-400 text-xs flex items-center gap-2">
+                      <FiAlertTriangle className="shrink-0" />
+                      {session.players[loserIndex].name} is not a registered
+                      player. Only registered players can take credit.
+                    </p>
+                  </div>
+                )}
+                {paymentMethod === "OnCredit" && loserIsRegistered && (
+                  <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 mt-2">
+                    <p className="text-blue-400 text-xs flex items-center gap-2">
+                      <FiCheckCircle className="shrink-0" />
+                      Credit will be added to{" "}
+                      <span className="font-semibold">
+                        {session.players[loserIndex].name}
+                      </span>
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -785,7 +1072,7 @@ function EndSessionModal({
                       <span className="text-white text-sm">{p.name}</span>
                     </div>
                     <span className="text-emerald-400 font-semibold text-sm">
-                      Rs. {Math.ceil(totalBill / playerCount)}
+                      Rs. {Math.ceil(totalBill / playerCount).toLocaleString()}
                     </span>
                   </div>
                 ))}
@@ -885,7 +1172,7 @@ function EndSessionModal({
                           </p>
                           {teamPlayers.length > 0 && (
                             <p className="text-slate-500 text-xs mt-0.5">
-                              Rs. {eachPays} each
+                              Rs. {eachPays.toLocaleString()} each
                             </p>
                           )}
                         </button>
@@ -903,7 +1190,8 @@ function EndSessionModal({
                   <span
                     className={`ml-2 font-semibold ${customTotal === totalBill ? "text-emerald-400" : "text-orange-400"}`}
                   >
-                    (Rs. {customTotal} / Rs. {totalBill})
+                    (Rs. {customTotal.toLocaleString()} / Rs.{" "}
+                    {totalBill.toLocaleString()})
                   </span>
                 </p>
                 {session.players.map((p, i) => (
@@ -950,85 +1238,79 @@ function EndSessionModal({
                       setPaymentMethod(m);
                       if (m !== "OnCredit") setCreditPlayerId("");
                     }}
+                    disabled={m === "OnCredit" && !canUseCredit}
                     className={`py-2.5 rounded-xl border text-xs font-medium transition-all ${
                       paymentMethod === m
                         ? m === "OnCredit"
                           ? "bg-orange-500/20 border-orange-500/40 text-orange-400"
                           : "bg-blue-600/20 border-blue-500/40 text-blue-400"
-                        : "bg-slate-800/50 border-slate-700/40 text-slate-400 hover:text-white"
+                        : m === "OnCredit" && !canUseCredit
+                          ? "bg-slate-800/30 border-slate-700/30 text-slate-600 cursor-not-allowed"
+                          : "bg-slate-800/50 border-slate-700/40 text-slate-400 hover:text-white"
                     }`}
                   >
-                    {m === "Cash"
-                      ? "Cash"
-                      : m === "EasyPaisa"
-                        ? "EasyPaisa"
-                        : m === "JazzCash"
-                          ? "JazzCash"
-                          : "On Credit"}
+                    {m === "OnCredit" ? "On Credit" : m}
                   </button>
                 ),
               )}
             </div>
 
-            {/* On Credit Player Selector */}
-            {paymentMethod === "OnCredit" && (
+            {showCreditSelector && (
               <div className="mt-3">
-                {registeredPlayers.length === 0 ? (
-                  <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-3">
-                    <p className="text-orange-400 text-xs flex items-center gap-2">
-                      <FiAlertTriangle className="shrink-0" />
-                      No registered players in this session. Only saved players
-                      can take credit.
-                    </p>
-                  </div>
-                ) : (
-                  <div>
-                    <p className="text-slate-400 text-xs mb-2">
-                      Who is taking credit?
-                    </p>
-                    <div className="space-y-2">
-                      {registeredPlayers.map((p, i) => (
-                        <button
-                          key={i}
-                          onClick={() =>
-                            setCreditPlayerId(p.playerId || p.name)
-                          }
-                          className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
-                            creditPlayerId === (p.playerId || p.name)
-                              ? "bg-orange-500/10 border-orange-500/30"
-                              : "bg-slate-800/50 border-slate-700/40 hover:border-slate-600"
-                          }`}
-                        >
-                          <div
-                            className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                              creditPlayerId === (p.playerId || p.name)
-                                ? "bg-orange-500/20 text-orange-400"
-                                : "bg-slate-700 text-slate-400"
-                            }`}
-                          >
-                            {p.name.charAt(0)}
-                          </div>
-                          <span
-                            className={`text-sm font-medium ${
-                              creditPlayerId === (p.playerId || p.name)
-                                ? "text-orange-400"
-                                : "text-white"
-                            }`}
-                          >
-                            {p.name}
-                          </span>
-                          <span className="text-blue-400 text-xs ml-auto">
-                            ★ Registered
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                <p className="text-slate-400 text-xs mb-2">
+                  Who is taking credit?
+                </p>
+                <div className="space-y-2">
+                  {registeredPlayers.map((p, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setCreditPlayerId(p.playerId || p.name)}
+                      className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
+                        creditPlayerId === (p.playerId || p.name)
+                          ? "bg-orange-500/10 border-orange-500/30"
+                          : "bg-slate-800/50 border-slate-700/40 hover:border-slate-600"
+                      }`}
+                    >
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                          creditPlayerId === (p.playerId || p.name)
+                            ? "bg-orange-500/20 text-orange-400"
+                            : "bg-slate-700 text-slate-400"
+                        }`}
+                      >
+                        {p.name.charAt(0)}
+                      </div>
+                      <span
+                        className={`text-sm font-medium ${
+                          creditPlayerId === (p.playerId || p.name)
+                            ? "text-orange-400"
+                            : "text-white"
+                        }`}
+                      >
+                        {p.name}
+                      </span>
+                      <span className="text-blue-400 text-xs ml-auto">
+                        ★ Registered
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {paymentMethod === "OnCredit" && !canUseCredit && (
+              <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-3 mt-3">
+                <p className="text-orange-400 text-xs flex items-center gap-2">
+                  <FiAlertTriangle className="shrink-0" />
+                  {splitMode === "loser"
+                    ? `${session.players[loserIndex].name} is not a registered player. Only registered players can take credit.`
+                    : "No registered players in this session. Only registered players can take credit."}
+                </p>
               </div>
             )}
           </div>
 
+          {/* Buttons */}
           <div className="flex gap-3">
             <button
               onClick={onClose}
@@ -1037,20 +1319,7 @@ function EndSessionModal({
               Cancel
             </button>
             <button
-              onClick={() => {
-                if (collectDisabled) return;
-                const creditPlayer = registeredPlayers.find(
-                  (p) => (p.playerId || p.name) === creditPlayerId,
-                );
-                onEnd(
-                  table.id,
-                  getSplits(),
-                  totalBill,
-                  paymentMethod,
-                  creditPlayer?.name,
-                );
-                onClose();
-              }}
+              onClick={handleCollect}
               disabled={collectDisabled}
               className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed text-white py-3 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2"
             >
@@ -1090,7 +1359,7 @@ function TableCard({
           : "border-slate-700/40 hover:border-slate-600/60 shadow-lg shadow-slate-900/50"
       }`}
     >
-      {/* Remove Button — only on free tables */}
+      {/* Remove Button */}
       {!isOccupied && canRemove && (
         <button
           onClick={() => onRemove(table.id)}
@@ -1100,13 +1369,11 @@ function TableCard({
         </button>
       )}
 
-      {/* Status Bar */}
       <div
         className={`h-1 w-full ${isOccupied ? "bg-red-500" : "bg-emerald-500"}`}
       />
 
       <div className="p-4 bg-slate-900/60">
-        {/* SVG Table */}
         <div className="mb-3">
           <SnookerTableSVG
             occupied={isOccupied}
@@ -1116,7 +1383,6 @@ function TableCard({
           />
         </div>
 
-        {/* Status & Timer */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-1.5">
             <div
@@ -1135,10 +1401,8 @@ function TableCard({
           )}
         </div>
 
-        {/* Session Info */}
         {isOccupied && table.session ? (
           <div className="space-y-2 mb-3">
-            {/* Players */}
             <div className="flex flex-wrap gap-1">
               {table.session.players.map((p, i) => (
                 <span
@@ -1155,7 +1419,6 @@ function TableCard({
                 </span>
               ))}
             </div>
-            {/* Game & Bill */}
             <div className="flex items-center justify-between bg-slate-800/50 rounded-xl px-3 py-2">
               <span className="text-slate-400 text-xs">
                 {table.session.gameType}
@@ -1171,7 +1434,6 @@ function TableCard({
           </div>
         )}
 
-        {/* Action Button */}
         {isOccupied ? (
           <button
             onClick={() => onEndClick(table)}
@@ -1246,7 +1508,6 @@ function AddTableModal({
             </p>
           </div>
 
-          {/* Quick Name Suggestions */}
           <div>
             <p className="text-slate-500 text-xs mb-2">Quick suggestions</p>
             <div className="flex flex-wrap gap-2">
@@ -1365,7 +1626,6 @@ function Sidebar({
         ${open ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 lg:sticky lg:top-0 lg:z-auto
       `}
       >
-        {/* Brand */}
         <div className="px-5 pt-5 pb-4 border-b border-slate-700/50">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/20">
@@ -1382,10 +1642,8 @@ function Sidebar({
           </div>
         </div>
 
-        {/* Club Info */}
         <div className="px-4 py-3 border-b border-slate-700/50">
           <div className="relative bg-gradient-to-br from-blue-600/15 to-blue-500/5 border border-blue-500/20 rounded-xl p-3 overflow-hidden">
-            {/* Decorative dot */}
             <div className="absolute top-2 right-2 w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
             <p className="text-white text-sm font-bold truncate pr-4">
               {user.club_name}
@@ -1471,6 +1729,12 @@ export default function TablesPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [removeTableId, setRemoveTableId] = useState<number | null>(null);
 
+  const occupiedPlayers = new Set(
+    tables
+      .filter((t) => t.status === "occupied" && t.session)
+      .flatMap((t) => t.session!.players.map((p) => p.name)),
+  );
+
   useEffect(() => {
     const stored = localStorage.getItem("club_user");
     if (!stored) {
@@ -1499,8 +1763,68 @@ export default function TablesPage() {
     const players = localStorage.getItem(`club_players_${u.email}`);
     if (players) setSavedPlayers(JSON.parse(players));
 
-    const games = localStorage.getItem(`club_games_${u.email}`);
-    setGameTypes(games ? JSON.parse(games) : []);
+    const savedGames = localStorage.getItem(`club_games_${u.email}`);
+    if (savedGames) {
+      setGameTypes(JSON.parse(savedGames));
+    } else {
+      const defaultGames = [
+        {
+          id: "per-hour",
+          name: "Per Hour",
+          rate: 200,
+          unit: "per hour",
+          icon: "clock",
+          color: "blue",
+          enabled: true,
+          isCustom: false,
+        },
+        {
+          id: "full-frame",
+          name: "Full Frame",
+          rate: 100,
+          unit: "per frame",
+          icon: "fullframe",
+          color: "emerald",
+          enabled: true,
+          isCustom: false,
+        },
+        {
+          id: "6-balls",
+          name: "6 Balls",
+          rate: 60,
+          unit: "per game",
+          icon: "6ball",
+          color: "purple",
+          enabled: true,
+          isCustom: false,
+        },
+        {
+          id: "3-balls",
+          name: "3 Balls",
+          rate: 40,
+          unit: "per game",
+          icon: "3ball",
+          color: "orange",
+          enabled: true,
+          isCustom: false,
+        },
+        {
+          id: "1-ball",
+          name: "1 Ball",
+          rate: 20,
+          unit: "per game",
+          icon: "1ball",
+          color: "red",
+          enabled: false,
+          isCustom: false,
+        },
+      ];
+      setGameTypes(defaultGames);
+      localStorage.setItem(
+        `club_games_${u.email}`,
+        JSON.stringify(defaultGames),
+      );
+    }
 
     const stats = localStorage.getItem(`club_today_${u.email}`);
     if (stats) {
@@ -1511,7 +1835,6 @@ export default function TablesPage() {
         setTodayRevenue(s.revenue || 0);
         setTodaySessions(s.sessions || 0);
       } else {
-        // New day — reset stats
         localStorage.setItem(
           `club_today_${u.email}`,
           JSON.stringify({
@@ -1637,7 +1960,7 @@ export default function TablesPage() {
         creditPlayerName,
       };
 
-      // ── Save debt if On Credit ──────────────────────────
+      // ✅ FIX 1: Save debt if On Credit
       if (paymentMethod === "OnCredit" && creditPlayerName) {
         const debtKey = `club_debts_${user.email}`;
         const existing = localStorage.getItem(debtKey);
@@ -1648,6 +1971,34 @@ export default function TablesPage() {
         localStorage.setItem(debtKey, JSON.stringify(debts));
       }
 
+      // Update registered player stats
+      const playersKey = `club_players_${user.email}`;
+      const savedPlayers = localStorage.getItem(playersKey);
+      if (savedPlayers) {
+        const playerList = JSON.parse(savedPlayers);
+        const todayStr = new Date().toISOString().split("T")[0];
+        const updatedPlayerList = playerList.map(
+          (p: { name: string; totalGames?: number; totalPaid?: number }) => {
+            const split = splits.find((s) => s.playerName === p.name);
+            const isInSession = table.session!.players.some(
+              (sp) => sp.name === p.name && sp.isRegistered,
+            );
+            if (!isInSession) return p;
+            return {
+              ...p,
+              totalGames: (p.totalGames || 0) + 1,
+              totalPaid:
+                paymentMethod !== "OnCredit"
+                  ? (p.totalPaid || 0) + (split?.amount || 0)
+                  : p.totalPaid || 0,
+              lastVisit: todayStr,
+            };
+          },
+        );
+        localStorage.setItem(playersKey, JSON.stringify(updatedPlayerList));
+      }
+
+      // ✅ Save to club_recent (ALL sessions, including credit)
       const updatedRecent = [completed, ...recentSessions].slice(0, 100);
       setRecentSessions(updatedRecent);
       localStorage.setItem(
@@ -1655,18 +2006,33 @@ export default function TablesPage() {
         JSON.stringify(updatedRecent),
       );
 
-      const newRevenue = todayRevenue + totalAmount;
-      const newSessions = todaySessions + 1;
-      setTodayRevenue(newRevenue);
-      setTodaySessions(newSessions);
-      localStorage.setItem(
-        `club_today_${user.email}`,
-        JSON.stringify({
-          revenue: newRevenue,
-          sessions: newSessions,
-          date: new Date().toISOString().split("T")[0],
-        }),
-      );
+      // ✅ FIX 2: Only add to revenue if NOT OnCredit
+      if (paymentMethod !== "OnCredit") {
+        const newRevenue = todayRevenue + totalAmount;
+        const newSessions = todaySessions + 1;
+        setTodayRevenue(newRevenue);
+        setTodaySessions(newSessions);
+        localStorage.setItem(
+          `club_today_${user.email}`,
+          JSON.stringify({
+            revenue: newRevenue,
+            sessions: newSessions,
+            date: new Date().toISOString().split("T")[0],
+          }),
+        );
+      } else {
+        // Credit: Only increment session count, NOT revenue
+        const newSessions = todaySessions + 1;
+        setTodaySessions(newSessions);
+        localStorage.setItem(
+          `club_today_${user.email}`,
+          JSON.stringify({
+            revenue: todayRevenue, // ✅ Keep same revenue (don't add credit)
+            sessions: newSessions,
+            date: new Date().toISOString().split("T")[0],
+          }),
+        );
+      }
 
       const updated = tables.map((t) =>
         t.id === tableId
@@ -1677,7 +2043,6 @@ export default function TablesPage() {
     },
     [tables, user, recentSessions, todayRevenue, todaySessions, persistTables],
   );
-
   const occupiedCount = tables.filter((t) => t.status === "occupied").length;
   const availableCount = tables.filter((t) => t.status === "available").length;
   const activePlayers = tables.reduce(
@@ -1702,10 +2067,8 @@ export default function TablesPage() {
       />
 
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
         <header className="sticky top-0 z-10 bg-slate-950/90 backdrop-blur-xl border-b border-slate-700/40 px-4 lg:px-6">
           <div className="flex items-center justify-between h-18">
-            {/* Left */}
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -1725,9 +2088,7 @@ export default function TablesPage() {
               </div>
             </div>
 
-            {/* Right */}
             <div className="flex items-center gap-2">
-              {/* Status pills — desktop only */}
               <div className="hidden sm:flex items-center gap-2">
                 <div
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium ${
@@ -1746,7 +2107,6 @@ export default function TablesPage() {
                   {occupiedCount > 0 ? `${occupiedCount} In Use` : "All Free"}
                 </div>
 
-                {/* Live clock */}
                 <div className="flex items-center gap-1.5 bg-slate-900/80 border border-slate-700/50 rounded-xl px-3 py-1.5">
                   <FiClock className="text-slate-500 text-xs" />
                   <span className="text-slate-300 text-xs font-mono tracking-wide">
@@ -1759,7 +2119,6 @@ export default function TablesPage() {
                 </div>
               </div>
 
-              {/* Add Table button */}
               <button
                 onClick={() => setShowAddModal(true)}
                 className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-xl text-sm font-medium transition-colors"
@@ -1773,7 +2132,6 @@ export default function TablesPage() {
         </header>
 
         <main className="flex-1 p-4 lg:p-8 space-y-6" suppressHydrationWarning>
-          {/* Today Summary */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               {
@@ -1836,7 +2194,6 @@ export default function TablesPage() {
             ))}
           </div>
 
-          {/* Tables Grid */}
           <div>
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -1890,7 +2247,6 @@ export default function TablesPage() {
             )}
           </div>
 
-          {/* Recent Sessions */}
           {recentSessions.length > 0 && (
             <div className="bg-slate-900/60 border border-slate-700/40 rounded-2xl overflow-hidden">
               <div className="px-6 py-4 border-b border-slate-700/40 flex items-center justify-between">
@@ -1908,37 +2264,47 @@ export default function TablesPage() {
                 </a>
               </div>
               <div className="divide-y divide-slate-700/30">
-                {recentSessions.slice(0, 6).map((s) => (
-                  <div
-                    key={s.id}
-                    className="px-6 py-4 flex items-center gap-4 hover:bg-slate-800/30 transition-colors"
-                  >
-                    <div className="w-10 h-10 bg-blue-600/20 border border-blue-500/20 rounded-xl flex items-center justify-center shrink-0">
-                      <span className="text-blue-400 text-xs font-bold">
-                        T{s.tableNo}
-                      </span>
+                {recentSessions.slice(0, 6).map((s) => {
+                  const isCredit = s.paymentMethod === "OnCredit";
+                  return (
+                    <div
+                      key={s.id}
+                      className="px-6 py-4 flex items-center gap-4 hover:bg-slate-800/30 transition-colors"
+                    >
+                      <div className="w-10 h-10 bg-blue-600/20 border border-blue-500/20 rounded-xl flex items-center justify-center shrink-0">
+                        <span className="text-blue-400 text-xs font-bold">
+                          T{s.tableNo}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-sm font-medium truncate">
+                          {s.players.map((p) => p.name).join(" vs ")}
+                        </p>
+                        <p className="text-slate-500 text-xs">
+                          {s.gameType} • {s.duration}
+                        </p>
+                      </div>
+                      {isCredit && (
+                        <span className="text-[10px] bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2 py-0.5 rounded-lg shrink-0">
+                          Credit
+                        </span>
+                      )}
+                      <div className="text-right shrink-0">
+                        <p
+                          className={`font-bold text-sm ${isCredit ? "text-orange-400" : "text-emerald-400"}`}
+                        >
+                          Rs. {s.totalAmount.toLocaleString()}
+                        </p>
+                        <p className="text-slate-600 text-xs">
+                          {new Date(s.endTime).toLocaleTimeString("en-PK", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white text-sm font-medium truncate">
-                        {s.players.map((p) => p.name).join(" vs ")}
-                      </p>
-                      <p className="text-slate-500 text-xs">
-                        {s.gameType} • {s.duration}
-                      </p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-emerald-400 font-bold text-sm">
-                        Rs. {s.totalAmount.toLocaleString()}
-                      </p>
-                      <p className="text-slate-600 text-xs">
-                        {new Date(s.endTime).toLocaleTimeString("en-PK", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -1972,6 +2338,7 @@ export default function TablesPage() {
           table={startModal}
           savedPlayers={savedPlayers}
           gameTypes={gameTypes}
+          occupiedPlayers={occupiedPlayers} // ✅ ADD THIS LINE
           onClose={() => setStartModal(null)}
           onStart={handleStartSession}
         />

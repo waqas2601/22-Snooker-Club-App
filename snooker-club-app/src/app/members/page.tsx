@@ -24,10 +24,14 @@ import {
   FiAlertTriangle,
   FiMinusCircle,
   FiMapPin,
+  FiMessageCircle,
+  FiTarget,
+  FiInfo,
+  FiCheckCircle,
 } from "react-icons/fi";
 import { GiPoolTriangle } from "react-icons/gi";
 
-// ─── Types ────────────────────────────────────────────────
+// ─── Types ─────────────────────────────────────────────────
 interface ClubUser {
   club_name: string;
   owner_name: string;
@@ -35,97 +39,33 @@ interface ClubUser {
   location: string;
   tables: number;
 }
-
 interface Player {
   id: string;
   name: string;
   phone: string;
   membershipType: "Regular" | "Premium" | "VIP";
-  totalVisits: number;
+  totalGames: number;
   totalPaid: number;
   lastVisit: string;
   joinDate: string;
 }
 
-// const DUMMY_PLAYERS: Player[] = [
-//   {
-//     id: "1",
-//     name: "Ahmed Khan",
-//     phone: "0300-1234567",
-//     membershipType: "VIP",
-//     totalVisits: 89,
-//     totalPaid: 45000,
-//     lastVisit: "2025-02-20",
-//     joinDate: "2024-01-15",
-//   },
-//   {
-//     id: "2",
-//     name: "Bilal Mahmood",
-//     phone: "0311-9876543",
-//     membershipType: "Premium",
-//     totalVisits: 54,
-//     totalPaid: 28000,
-//     lastVisit: "2025-02-19",
-//     joinDate: "2024-02-20",
-//   },
-//   {
-//     id: "3",
-//     name: "Kamran Raza",
-//     phone: "0333-5551234",
-//     membershipType: "Regular",
-//     totalVisits: 32,
-//     totalPaid: 12000,
-//     lastVisit: "2025-02-18",
-//     joinDate: "2024-03-10",
-//   },
-//   {
-//     id: "4",
-//     name: "Zain Ahmed",
-//     phone: "0321-7778888",
-//     membershipType: "Premium",
-//     totalVisits: 21,
-//     totalPaid: 15000,
-//     lastVisit: "2025-02-15",
-//     joinDate: "2024-01-05",
-//   },
-//   {
-//     id: "5",
-//     name: "Usman Ali",
-//     phone: "0345-4443333",
-//     membershipType: "Regular",
-//     totalVisits: 15,
-//     totalPaid: 6000,
-//     lastVisit: "2025-02-10",
-//     joinDate: "2024-04-01",
-//   },
-//   {
-//     id: "6",
-//     name: "Hassan Tariq",
-//     phone: "0312-2223333",
-//     membershipType: "VIP",
-//     totalVisits: 120,
-//     totalPaid: 72000,
-//     lastVisit: "2025-02-20",
-//     joinDate: "2023-11-20",
-//   },
-// ];
-
+// ─── Constants ──────────────────────────────────────────────
 const navLinks = [
   { label: "Dashboard", icon: FiHome, href: "/dashboard", active: false },
   { label: "Tables", icon: FiSquare, href: "/tables", active: false },
   { label: "Players", icon: FiUsers, href: "/members", active: true },
   { label: "Payments", icon: FiDollarSign, href: "/payments", active: false },
-  { label: "Games", icon: FiSquare, href: "/games", active: false },
+  { label: "Games", icon: FiTarget, href: "/games", active: false },
   { label: "Profile", icon: FiSettings, href: "/profile", active: false },
 ];
 
-const membershipColors = {
+const MEMBERSHIP_COLORS: Record<string, string> = {
   Regular: "bg-slate-500/10 text-slate-400 border-slate-500/20",
-  Premium: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  Premium: "bg-blue-500/10  text-blue-400  border-blue-500/20",
   VIP: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
 };
-
-const membershipIcons = {
+const MEMBERSHIP_ICONS: Record<string, React.ElementType> = {
   Regular: FiUser,
   Premium: FiStar,
   VIP: FiAward,
@@ -152,13 +92,8 @@ function Sidebar({
         />
       )}
       <aside
-        className={`
-        fixed top-0 left-0 h-screen w-64 bg-slate-900/95 backdrop-blur-xl border-r border-slate-700/50
-        z-30 flex flex-col transition-transform duration-300
-        ${open ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 lg:sticky lg:top-0 lg:z-auto
-      `}
+        className={`fixed top-0 left-0 h-screen w-64 bg-slate-900/95 backdrop-blur-xl border-r border-slate-700/50 z-30 flex flex-col transition-transform duration-300 ${open ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 lg:sticky lg:top-0 lg:z-auto`}
       >
-        {/* Brand */}
         <div className="px-5 pt-5 pb-4 border-b border-slate-700/50">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/20">
@@ -175,25 +110,26 @@ function Sidebar({
           </div>
         </div>
 
-        {/* Club Info */}
         <div className="px-4 py-3 border-b border-slate-700/50">
           <div className="relative bg-gradient-to-br from-blue-600/15 to-blue-500/5 border border-blue-500/20 rounded-xl p-3 overflow-hidden">
-            {/* Decorative dot */}
             <div className="absolute top-2 right-2 w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
             <p className="text-white text-sm font-bold truncate pr-4">
               {user.club_name}
             </p>
             <div className="flex items-center gap-2 mt-1.5">
               <span className="flex items-center gap-1 text-slate-400 text-[10px]">
-                <FiMapPin className="text-[9px]" /> {user.location}
+                <FiMapPin className="text-[9px]" />
+                {user.location}
               </span>
               <span className="text-slate-600">•</span>
               <span className="flex items-center gap-1 text-slate-400 text-[10px]">
-                <FiSquare className="text-[9px]" /> {user.tables} Tables
+                <FiSquare className="text-[9px]" />
+                {user.tables} Tables
               </span>
             </div>
           </div>
         </div>
+
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           <p className="text-slate-600 text-xs font-semibold uppercase tracking-wider px-3 mb-3">
             Navigation
@@ -202,12 +138,7 @@ function Sidebar({
             <a
               key={link.label}
               href={link.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
-                ${
-                  link.active
-                    ? "bg-blue-600/20 text-blue-400 border border-blue-500/30"
-                    : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-                }`}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${link.active ? "bg-blue-600/20 text-blue-400 border border-blue-500/30" : "text-slate-400 hover:text-white hover:bg-slate-800/60"}`}
             >
               <link.icon className="text-lg shrink-0" />
               {link.label}
@@ -217,9 +148,10 @@ function Sidebar({
             </a>
           ))}
         </nav>
+
         <div className="p-4 border-t border-slate-700/50">
           <div className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/40 rounded-xl px-3 py-2.5 mb-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 shadow shadow-blue-500/30">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0">
               {user.owner_name.charAt(0)}
             </div>
             <div className="flex-1 min-w-0">
@@ -259,7 +191,7 @@ function PlayerModal({
   player: Player | null;
   onClose: () => void;
   onSave: (
-    p: Omit<Player, "id" | "totalVisits" | "totalPaid" | "joinDate">,
+    p: Omit<Player, "id" | "totalGames" | "totalPaid" | "joinDate">,
   ) => void;
 }) {
   const isEditing = !!player;
@@ -273,6 +205,7 @@ function PlayerModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.name.trim()) return;
     onSave(form);
     onClose();
   };
@@ -280,8 +213,7 @@ function PlayerModal({
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-slate-900 border border-slate-700/50 rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-5">
           <div>
             <h2 className="text-white font-bold text-lg">
               {isEditing ? "Edit Player" : "Add New Player"}
@@ -289,7 +221,7 @@ function PlayerModal({
             <p className="text-slate-500 text-xs mt-0.5">
               {isEditing
                 ? "Update player details"
-                : "Add a regular player to your club"}
+                : "Register a player to your club"}
             </p>
           </div>
           <button
@@ -301,20 +233,18 @@ function PlayerModal({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Avatar Preview */}
-          <div className="flex justify-center mb-2">
-            <div className="w-16 h-16 bg-linear-to-br from-blue-500 to-blue-700 rounded-2xl flex items-center justify-center text-white text-2xl font-bold">
+          <div className="flex justify-center">
+            <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl flex items-center justify-center text-white text-2xl font-bold">
               {form.name ? form.name.charAt(0).toUpperCase() : "?"}
             </div>
           </div>
 
-          {/* Name */}
           <div>
             <label className="text-slate-300 text-sm font-medium block mb-1.5">
               Full Name
             </label>
             <div className="relative">
-              <FiUsers className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
+              <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
               <input
                 type="text"
                 required
@@ -326,10 +256,9 @@ function PlayerModal({
             </div>
           </div>
 
-          {/* Phone */}
           <div>
             <label className="text-slate-300 text-sm font-medium block mb-1.5">
-              Phone Number <span className="text-slate-500">(optional)</span>
+              Phone <span className="text-slate-500">(optional)</span>
             </label>
             <div className="relative">
               <FiPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
@@ -343,37 +272,29 @@ function PlayerModal({
             </div>
           </div>
 
-          {/* Membership Type */}
           <div>
             <label className="text-slate-300 text-sm font-medium block mb-1.5">
               Player Type
             </label>
             <div className="grid grid-cols-3 gap-2">
-              {(["Regular", "Premium", "VIP"] as const).map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => setForm({ ...form, membershipType: type })}
-                  className={`py-2.5 rounded-xl text-xs font-medium border transition-all ${
-                    form.membershipType === type
-                      ? membershipColors[type]
-                      : "bg-slate-800/50 border-slate-700/40 text-slate-400 hover:text-white"
-                  }`}
-                >
-                  <span className="flex items-center justify-center gap-1.5">
-                    {(() => {
-                      const Icon = membershipIcons[type];
-                      return <Icon className="text-xs" />;
-                    })()}
+              {(["Regular", "Premium", "VIP"] as const).map((type) => {
+                const Icon = MEMBERSHIP_ICONS[type];
+                return (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => setForm({ ...form, membershipType: type })}
+                    className={`py-2.5 rounded-xl text-xs font-medium border transition-all flex items-center justify-center gap-1.5 ${form.membershipType === type ? MEMBERSHIP_COLORS[type] : "bg-slate-800/50 border-slate-700/40 text-slate-400 hover:text-white"}`}
+                  >
+                    <Icon className="text-xs" />
                     {type}
-                  </span>
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Buttons */}
-          <div className="flex gap-3 pt-2">
+          <div className="flex gap-3 pt-1">
             <button
               type="button"
               onClick={onClose}
@@ -394,7 +315,7 @@ function PlayerModal({
   );
 }
 
-// ─── Delete Confirm ────────────────────────────────────────
+// ─── Delete Modal ────────────────────────────���─────────────
 function DeleteModal({
   player,
   onClose,
@@ -412,9 +333,8 @@ function DeleteModal({
         </div>
         <h2 className="text-white font-bold text-lg mb-2">Remove Player?</h2>
         <p className="text-slate-400 text-sm mb-6">
-          Are you sure you want to remove{" "}
-          <span className="text-white font-semibold">{player.name}</span> from
-          your players list?
+          Remove <span className="text-white font-semibold">{player.name}</span>{" "}
+          from your club? Their payment history will remain in Payments.
         </p>
         <div className="flex gap-3">
           <button
@@ -448,14 +368,83 @@ function SettleDebtModal({
   player: Player;
   debt: number;
   onClose: () => void;
-  onSettle: (playerName: string, amount: number) => void;
+  onSettle: (
+    playerName: string,
+    amount: number,
+    method: "Cash" | "EasyPaisa" | "JazzCash",
+  ) => void;
 }) {
   const [amount, setAmount] = useState(debt);
+  const [method, setMethod] = useState<"Cash" | "EasyPaisa" | "JazzCash">(
+    "Cash",
+  );
+  const [showSuccess, setShowSuccess] = useState(false);
+  const remaining = debt - amount;
+
+  const handleSettle = () => {
+    onSettle(player.name, amount, method);
+    setShowSuccess(true);
+  };
+
+  if (showSuccess) {
+    return (
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="bg-slate-900 border border-slate-700/50 rounded-2xl p-6 w-full max-w-sm shadow-2xl text-center">
+          <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <FiCheckCircle className="text-emerald-400 text-3xl" />
+          </div>
+          <h2 className="text-white font-bold text-lg mb-2">
+            Debt Settled! 🎉
+          </h2>
+          <p className="text-slate-400 text-sm mb-4">
+            Rs. {amount.toLocaleString()} collected from{" "}
+            <span className="text-white font-semibold">{player.name}</span>
+          </p>
+
+          <div className="bg-slate-800/50 border border-slate-700/40 rounded-xl p-4 mb-5 space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-slate-400">Amount Collected</span>
+              <span className="text-emerald-400 font-bold">
+                Rs. {amount.toLocaleString()}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-slate-400">Payment Method</span>
+              <span className="text-white font-medium">{method}</span>
+            </div>
+            {remaining > 0 && (
+              <div className="flex justify-between text-sm pt-2 border-t border-slate-700/40">
+                <span className="text-slate-400">Remaining Debt</span>
+                <span className="text-orange-400 font-semibold">
+                  Rs. {remaining.toLocaleString()}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-3 mb-5">
+            <p className="text-blue-400 text-xs flex items-start gap-2">
+              <FiInfo className="shrink-0 mt-0.5" />
+              This payment has been added to today's revenue and will appear in
+              the Payments page.
+            </p>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl text-sm font-semibold transition-colors"
+          >
+            Done
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-slate-900 border border-slate-700/50 rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-5">
           <div>
             <h2 className="text-white font-bold text-lg">Settle Debt</h2>
             <p className="text-slate-500 text-xs mt-0.5">
@@ -471,23 +460,21 @@ function SettleDebtModal({
         </div>
 
         <div className="space-y-4">
-          {/* Debt Summary */}
-          <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-4 flex items-center justify-between">
+          <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl px-4 py-3 flex items-center justify-between">
             <span className="text-orange-400 text-sm font-medium">
               Outstanding Debt
             </span>
-            <span className="text-orange-400 font-bold text-lg">
+            <span className="text-orange-400 font-bold text-xl">
               Rs. {debt.toLocaleString()}
             </span>
           </div>
 
-          {/* Amount Input */}
           <div>
             <label className="text-slate-300 text-sm font-medium block mb-1.5">
-              Amount Paying Now
+              Amount Collecting Now
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-medium">
                 Rs.
               </span>
               <input
@@ -496,14 +483,13 @@ function SettleDebtModal({
                 max={debt}
                 value={amount}
                 onChange={(e) =>
-                  setAmount(Math.min(Number(e.target.value), debt))
+                  setAmount(Math.min(Math.max(1, Number(e.target.value)), debt))
                 }
                 className="w-full bg-slate-800/50 border border-slate-600/50 text-white rounded-xl pl-9 pr-4 py-2.5 text-sm font-bold focus:outline-none focus:border-blue-500 transition-colors"
               />
             </div>
           </div>
 
-          {/* Quick amounts */}
           <div>
             <p className="text-slate-500 text-xs mb-2">Quick amounts</p>
             <div className="flex gap-2 flex-wrap">
@@ -514,11 +500,7 @@ function SettleDebtModal({
                     key={preset}
                     type="button"
                     onClick={() => setAmount(preset)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                      amount === preset
-                        ? "bg-blue-600 text-white border-blue-500"
-                        : "bg-slate-800 text-slate-400 border-slate-700 hover:text-white"
-                    }`}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${amount === preset ? "bg-blue-600 text-white border-blue-500" : "bg-slate-800 text-slate-400 border-slate-700 hover:text-white"}`}
                   >
                     Rs. {preset.toLocaleString()}
                   </button>
@@ -526,24 +508,48 @@ function SettleDebtModal({
             </div>
           </div>
 
-          {/* Remaining after payment */}
-          {amount < debt && (
-            <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-3 flex items-center justify-between">
+          <div>
+            <p className="text-slate-300 text-sm font-medium mb-2">
+              Payment Method
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {(["Cash", "EasyPaisa", "JazzCash"] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setMethod(m)}
+                  className={`py-2.5 rounded-xl border text-xs font-medium transition-all ${method === m ? "bg-blue-600/20 border-blue-500/40 text-blue-400" : "bg-slate-800/50 border-slate-700/40 text-slate-400 hover:text-white"}`}
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {amount >= debt ? (
+            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 text-center">
+              <span className="text-emerald-400 text-sm font-semibold">
+                ✓ Debt will be fully cleared!
+              </span>
+            </div>
+          ) : (
+            <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl px-4 py-3 flex items-center justify-between">
               <span className="text-slate-400 text-xs">
                 Remaining after payment
               </span>
               <span className="text-orange-400 font-semibold text-sm">
-                Rs. {(debt - amount).toLocaleString()}
+                Rs. {remaining.toLocaleString()}
               </span>
             </div>
           )}
-          {amount >= debt && (
-            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 text-center">
-              <span className="text-emerald-400 text-sm font-semibold">
-                Debt fully cleared!
-              </span>
-            </div>
-          )}
+
+          <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl px-3 py-2.5">
+            <p className="text-blue-400 text-xs flex items-start gap-2">
+              <FiDollarSign className="shrink-0 mt-0.5" />
+              Rs. {amount.toLocaleString()} will be added to today's revenue
+              under <strong>{method}</strong>
+            </p>
+          </div>
 
           <div className="flex gap-3 pt-1">
             <button
@@ -553,14 +559,11 @@ function SettleDebtModal({
               Cancel
             </button>
             <button
-              onClick={() => {
-                onSettle(player.name, amount);
-                onClose();
-              }}
+              onClick={handleSettle}
               disabled={amount <= 0}
               className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-700 disabled:text-slate-500 text-white py-3 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2"
             >
-              <FiCheck /> Settle Rs. {amount.toLocaleString()}
+              <FiCheck /> Collect Rs. {amount.toLocaleString()}
             </button>
           </div>
         </div>
@@ -583,23 +586,44 @@ function PlayerCard({
   onDelete: (p: Player) => void;
   onSettle: (p: Player) => void;
 }) {
-  const daysSinceVisit = Math.floor(
-    (Date.now() - new Date(player.lastVisit).getTime()) / (1000 * 60 * 60 * 24),
-  );
+  const todayStr = new Date().toISOString().split("T")[0];
+  const visitStr = player.lastVisit ? player.lastVisit.split("T")[0] : "";
+  const isVisitedToday = visitStr === todayStr;
+  const daysSince = player.lastVisit
+    ? Math.floor(
+        (Date.now() - new Date(player.lastVisit).getTime()) /
+          (1000 * 60 * 60 * 24),
+      )
+    : 999;
+  const Icon = MEMBERSHIP_ICONS[player.membershipType];
 
   return (
-    <div className="bg-slate-900/60 border border-slate-700/40 rounded-2xl p-5 hover:border-slate-600/60 transition-all">
-      {/* Top Row */}
+    <div
+      className={`bg-slate-900/60 border rounded-2xl p-5 transition-all flex flex-col ${
+        debt > 0
+          ? "border-orange-500/20 hover:border-orange-500/40"
+          : "border-slate-700/40 hover:border-slate-600/60"
+      }`}
+    >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-linear-to-br from-blue-500 to-blue-700 rounded-2xl flex items-center justify-center text-white text-lg font-bold shrink-0">
+          <div
+            className={`w-11 h-11 rounded-2xl flex items-center justify-center text-white text-lg font-bold shrink-0 ${
+              isVisitedToday
+                ? "bg-gradient-to-br from-emerald-500 to-emerald-700"
+                : "bg-gradient-to-br from-blue-500 to-blue-700"
+            }`}
+          >
             {player.name.charAt(0)}
           </div>
           <div>
-            <h3 className="text-white font-semibold">{player.name}</h3>
+            <h3 className="text-white font-semibold text-sm leading-tight">
+              {player.name}
+            </h3>
             {player.phone ? (
               <p className="text-slate-400 text-xs flex items-center gap-1 mt-0.5">
-                <FiPhone className="text-xs" /> {player.phone}
+                <FiPhone className="text-[10px]" />
+                {player.phone}
               </p>
             ) : (
               <p className="text-slate-600 text-xs mt-0.5">No phone saved</p>
@@ -607,88 +631,121 @@ function PlayerCard({
           </div>
         </div>
         <span
-          className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border font-medium ${membershipColors[player.membershipType]}`}
+          className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg border font-medium shrink-0 ${MEMBERSHIP_COLORS[player.membershipType]}`}
         >
-          {(() => {
-            const Icon = membershipIcons[player.membershipType];
-            return <Icon className="text-xs" />;
-          })()}
+          <Icon className="text-[10px]" />
           {player.membershipType}
         </span>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-2 mb-4">
+      <div className="grid grid-cols-3 gap-2 mb-3">
         <div className="bg-slate-800/40 rounded-xl p-2.5 text-center">
-          <p className="text-white font-bold text-lg">{player.totalVisits}</p>
-          <p className="text-slate-500 text-[10px]">Visits</p>
+          <p className="text-white font-bold text-base">
+            {player.totalGames || 0}
+          </p>
+          <p className="text-slate-500 text-[10px]">Games</p>
         </div>
         <div className="bg-slate-800/40 rounded-xl p-2.5 text-center">
-          <p className="text-emerald-400 font-bold text-sm">
-            Rs.{(player.totalPaid / 1000).toFixed(0)}k
+          <p className="text-emerald-400 font-bold text-xs leading-snug mt-0.5">
+            {(player.totalPaid || 0) >= 1000
+              ? `Rs.${((player.totalPaid || 0) / 1000).toFixed(1)}k`
+              : `Rs.${player.totalPaid || 0}`}
           </p>
-          <p className="text-slate-500 text-[10px]">Total Paid</p>
+          <p className="text-slate-500 text-[10px]">Paid</p>
         </div>
         <div className="bg-slate-800/40 rounded-xl p-2.5 text-center">
           <p
-            className={`font-bold text-sm ${daysSinceVisit === 0 ? "text-emerald-400" : daysSinceVisit <= 3 ? "text-blue-400" : "text-slate-400"}`}
+            className={`font-bold text-xs leading-snug mt-0.5 ${
+              isVisitedToday
+                ? "text-emerald-400"
+                : daysSince <= 3
+                  ? "text-blue-400"
+                  : "text-slate-400"
+            }`}
           >
-            {daysSinceVisit === 0 ? "Today" : `${daysSinceVisit}d`}
+            {isVisitedToday
+              ? "Today"
+              : player.lastVisit
+                ? `${daysSince}d ago`
+                : "Never"}
           </p>
           <p className="text-slate-500 text-[10px]">Last Visit</p>
         </div>
       </div>
 
-      {/* Last Visit Bar */}
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-2 mb-3">
         <FiClock className="text-slate-600 text-xs shrink-0" />
-        <p className="text-slate-500 text-xs">
-          Last seen:{" "}
-          {new Date(player.lastVisit).toLocaleDateString("en-PK", {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-          })}
+        <p className="text-slate-500 text-xs truncate">
+          {player.lastVisit
+            ? new Date(player.lastVisit).toLocaleDateString("en-PK", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })
+            : "No visits yet"}
         </p>
-        {daysSinceVisit === 0 && (
-          <span className="ml-auto text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full">
-            Active Today
+        {isVisitedToday && (
+          <span className="ml-auto shrink-0 text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+            Active
           </span>
         )}
       </div>
 
-      {/* Debt Badge */}
-      {debt > 0 && (
-        <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl px-3 py-2 flex items-center justify-between mb-3">
-          <div className="flex items-center gap-1.5">
-            <FiAlertTriangle className="text-orange-400 text-xs" />
-            <span className="text-orange-400 text-xs font-medium">Owes</span>
+      <div className="mb-3 min-h-[38px]">
+        {debt > 0 ? (
+          <div className="bg-orange-500/10 border border-orange-500/25 rounded-xl px-3 py-2 flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <FiAlertTriangle className="text-orange-400 text-xs" />
+              <span className="text-orange-400 text-xs font-semibold">
+                Owes
+              </span>
+            </div>
+            <span className="text-orange-400 font-bold text-sm">
+              Rs. {debt.toLocaleString()}
+            </span>
           </div>
-          <span className="text-orange-400 font-bold text-sm">
-            Rs. {debt.toLocaleString()}
-          </span>
-        </div>
-      )}
+        ) : (
+          <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-xl px-3 py-2 flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+            <span className="text-emerald-600 text-xs">
+              No outstanding debt
+            </span>
+          </div>
+        )}
+      </div>
 
-      {/* Actions */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 mt-auto">
         <button
           onClick={() => onEdit(player)}
           className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700/40 hover:border-slate-600 text-slate-300 hover:text-white rounded-xl text-xs font-medium transition-all"
         >
           <FiEdit2 className="text-xs" /> Edit
         </button>
+
+        {player.phone && (
+          <a
+            href={`https://wa.me/92${player.phone.replace(/^0/, "").replace(/-/g, "")}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center px-3 py-2 bg-green-500/10 hover:bg-green-500/20 border border-green-500/20 text-green-400 rounded-xl text-xs transition-all"
+            title="WhatsApp"
+          >
+            <FiMessageCircle className="text-xs" />
+          </a>
+        )}
+
         {debt > 0 && (
           <button
             onClick={() => onSettle(player)}
-            className="flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 rounded-xl text-xs font-medium transition-all"
+            className="flex items-center justify-center gap-1 px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 rounded-xl text-xs font-medium transition-all"
           >
             <FiMinusCircle className="text-xs" /> Settle
           </button>
         )}
+
         <button
           onClick={() => onDelete(player)}
-          className="flex items-center justify-center gap-1.5 px-3 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl text-xs font-medium transition-all"
+          className="flex items-center justify-center px-3 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl text-xs transition-all"
         >
           <FiTrash2 className="text-xs" />
         </button>
@@ -703,14 +760,14 @@ export default function PlayersPage() {
   const [user, setUser] = useState<ClubUser | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [players, setPlayers] = useState<Player[]>([]);
+  const [debts, setDebts] = useState<Record<string, number>>({});
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"All" | Player["membershipType"]>("All");
   const [addModal, setAddModal] = useState(false);
   const [editPlayer, setEditPlayer] = useState<Player | null>(null);
   const [deletePlayer, setDeletePlayer] = useState<Player | null>(null);
-  const [storageKey, setStorageKey] = useState("");
-  const [debts, setDebts] = useState<Record<string, number>>({});
   const [settlePlayer, setSettlePlayer] = useState<Player | null>(null);
+  const [storageKey, setStorageKey] = useState("");
 
   useEffect(() => {
     const stored = localStorage.getItem("club_user");
@@ -728,7 +785,21 @@ export default function PlayersPage() {
 
     const savedDebts = localStorage.getItem(`club_debts_${u.email}`);
     if (savedDebts) setDebts(JSON.parse(savedDebts));
+    else setDebts({});
   }, [router]);
+
+  // ✅ Reload debts when tab gains focus (in case Dashboard updated them)
+  useEffect(() => {
+    const onFocus = () => {
+      if (!user) return;
+      const savedDebts = localStorage.getItem(`club_debts_${user.email}`);
+      setDebts(savedDebts ? JSON.parse(savedDebts) : {});
+      const saved = localStorage.getItem(`club_players_${user.email}`);
+      if (saved) setPlayers(JSON.parse(saved));
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [user]);
 
   const persist = (updated: Player[]) => {
     setPlayers(updated);
@@ -741,20 +812,20 @@ export default function PlayersPage() {
   };
 
   const handleAdd = (
-    form: Omit<Player, "id" | "totalVisits" | "totalPaid" | "joinDate">,
+    form: Omit<Player, "id" | "totalGames" | "totalPaid" | "joinDate">,
   ) => {
-    const newPlayer: Player = {
+    const p: Player = {
       ...form,
       id: `player-${Date.now()}`,
-      totalVisits: 0,
+      totalGames: 0,
       totalPaid: 0,
       joinDate: new Date().toISOString().split("T")[0],
     };
-    persist([newPlayer, ...players]);
+    persist([p, ...players]);
   };
 
   const handleEdit = (
-    form: Omit<Player, "id" | "totalVisits" | "totalPaid" | "joinDate">,
+    form: Omit<Player, "id" | "totalGames" | "totalPaid" | "joinDate">,
   ) => {
     if (!editPlayer) return;
     persist(
@@ -762,18 +833,68 @@ export default function PlayersPage() {
     );
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = (id: string) =>
     persist(players.filter((p) => p.id !== id));
+
+  // ✅ FIXED: Settle debt — NO club_today updates
+  const handleSettle = (
+    playerName: string,
+    amount: number,
+    method: "Cash" | "EasyPaisa" | "JazzCash",
+  ) => {
+    if (!user) return;
+
+    // 1. Reduce / clear debt in club_debts
+    const newDebts = { ...debts };
+    newDebts[playerName] = Math.max(0, (newDebts[playerName] || 0) - amount);
+    if (newDebts[playerName] === 0) delete newDebts[playerName];
+    setDebts(newDebts);
+    localStorage.setItem(`club_debts_${user.email}`, JSON.stringify(newDebts));
+
+    // ❌ REMOVED: Don't write to club_today — Dashboard calculates from club_recent
+
+    // 2. Write DebtPayment record to club_recent
+    const recentKey = `club_recent_${user.email}`;
+    const raw = localStorage.getItem(recentKey);
+    const recent = raw ? JSON.parse(raw) : [];
+    const record = {
+      id: `debt-${Date.now()}`,
+      tableNo: 0,
+      players: [{ name: playerName, isRegistered: true }],
+      gameType: "Debt Payment",
+      duration: "—",
+      totalAmount: amount,
+      splits: [{ playerName, amount }],
+      endTime: Date.now(),
+      paymentMethod: "DebtPayment",
+      settledMethod: method,
+      creditPlayerName: undefined,
+    };
+    localStorage.setItem(
+      recentKey,
+      JSON.stringify([record, ...recent].slice(0, 200)),
+    );
+
+    // 3. Update player: totalPaid increases, lastVisit = today
+    const todayStr = new Date().toISOString().split("T")[0];
+    persist(
+      players.map((p) => {
+        if (p.name !== playerName) return p;
+        return {
+          ...p,
+          totalPaid: (p.totalPaid || 0) + amount,
+          lastVisit: todayStr,
+        };
+      }),
+    );
   };
 
-  const handleSettle = (playerName: string, amount: number) => {
-    if (!user) return;
-    const updated = { ...debts };
-    updated[playerName] = Math.max(0, (updated[playerName] || 0) - amount);
-    if (updated[playerName] === 0) delete updated[playerName];
-    setDebts(updated);
-    localStorage.setItem(`club_debts_${user.email}`, JSON.stringify(updated));
-  };
+  const todayStr = new Date().toISOString().split("T")[0];
+  const activeToday = players.filter(
+    (p) => p.lastVisit?.split("T")[0] === todayStr,
+  ).length;
+  const totalDebt = Object.values(debts).reduce((a, b) => a + b, 0);
+  const debtorCount = Object.values(debts).filter((v) => v > 0).length;
 
   const filtered = players.filter((p) => {
     const matchSearch =
@@ -782,16 +903,6 @@ export default function PlayersPage() {
     const matchFilter = filter === "All" || p.membershipType === filter;
     return matchSearch && matchFilter;
   });
-
-  // Stats
-  const totalVisits = players.reduce((a, p) => a + p.totalVisits, 0);
-  const totalRevenue = players.reduce((a, p) => a + p.totalPaid, 0);
-  const activeToday = players.filter((p) => {
-    const days = Math.floor(
-      (Date.now() - new Date(p.lastVisit).getTime()) / (1000 * 60 * 60 * 24),
-    );
-    return days === 0;
-  }).length;
 
   if (!user)
     return (
@@ -810,10 +921,8 @@ export default function PlayersPage() {
       />
 
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
         <header className="sticky top-0 z-10 bg-slate-950/90 backdrop-blur-xl border-b border-slate-700/40 px-4 lg:px-6">
-          <div className="flex items-center justify-between h-18">
-            {/* Left */}
+          <div className="flex items-center justify-between h-14">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -831,88 +940,88 @@ export default function PlayersPage() {
                 </p>
               </div>
             </div>
-
-            {/* Right */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setAddModal(true)}
-                className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-xl text-sm font-medium transition-colors"
-              >
-                <FiPlus className="text-sm" />
-                <span className="hidden sm:inline">Add Player</span>
-                <span className="sm:hidden">Add</span>
-              </button>
-            </div>
+            <button
+              onClick={() => setAddModal(true)}
+              className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-xl text-sm font-medium transition-colors"
+            >
+              <FiPlus className="text-sm" />
+              <span className="hidden sm:inline">Add Player</span>
+              <span className="sm:hidden">Add</span>
+            </button>
           </div>
         </header>
 
         <main className="flex-1 p-4 lg:p-8 space-y-6">
-          {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               {
                 label: "Total Players",
                 value: players.length,
-                color: "blue",
+                sub: "Registered members",
                 icon: FiUsers,
+                color: "blue",
               },
               {
                 label: "Active Today",
                 value: activeToday,
-                color: "emerald",
+                sub: "Visited today",
                 icon: FiClock,
+                color: "emerald",
               },
               {
-                label: "Total Visits",
-                value: totalVisits,
-                color: "purple",
+                label: "Total Games",
+                value: players.reduce((a, p) => a + (p.totalGames || 0), 0),
+                sub: "All time",
                 icon: FiAward,
+                color: "purple",
               },
               {
                 label: "Outstanding Debt",
-                value: `Rs. ${Object.values(debts)
-                  .reduce((a, b) => a + b, 0)
-                  .toLocaleString()}`,
-                color: "orange",
+                value: `Rs. ${totalDebt.toLocaleString()}`,
+                sub: `${debtorCount} player${debtorCount !== 1 ? "s" : ""} owe`,
                 icon: FiAlertTriangle,
+                color: "orange",
               },
             ].map((s) => (
               <div
                 key={s.label}
-                className="bg-slate-900/60 border border-slate-700/40 rounded-2xl p-4"
+                className={`bg-slate-900/60 border rounded-2xl p-4 ${s.color === "orange" && totalDebt > 0 ? "border-orange-500/25 bg-orange-500/5" : "border-slate-700/40"}`}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-slate-400 text-xs">{s.label}</p>
+                  <p className="text-slate-400 text-xs font-medium">
+                    {s.label}
+                  </p>
                   <s.icon
-                    className={`text-sm ${
-                      s.color === "blue"
-                        ? "text-blue-400"
-                        : s.color === "emerald"
-                          ? "text-emerald-400"
-                          : s.color === "purple"
-                            ? "text-purple-400"
-                            : "text-orange-400"
-                    }`}
+                    className={`text-sm ${s.color === "blue" ? "text-blue-400" : s.color === "emerald" ? "text-emerald-400" : s.color === "purple" ? "text-purple-400" : "text-orange-400"}`}
                   />
                 </div>
                 <p
-                  className={`text-2xl font-bold ${
-                    s.color === "blue"
-                      ? "text-blue-400"
-                      : s.color === "emerald"
-                        ? "text-emerald-400"
-                        : s.color === "purple"
-                          ? "text-purple-400"
-                          : "text-orange-400"
-                  }`}
+                  className={`text-2xl font-bold ${s.color === "blue" ? "text-blue-400" : s.color === "emerald" ? "text-emerald-400" : s.color === "purple" ? "text-purple-400" : "text-orange-400"}`}
                 >
                   {s.value}
                 </p>
+                <p className="text-slate-500 text-xs mt-1">{s.sub}</p>
               </div>
             ))}
           </div>
 
-          {/* Search & Filter */}
+          {totalDebt > 0 && (
+            <div className="bg-orange-500/5 border border-orange-500/20 rounded-2xl px-4 py-3 flex items-start gap-3">
+              <FiAlertTriangle className="text-orange-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-orange-400 font-semibold text-sm">
+                  Rs. {totalDebt.toLocaleString()} Outstanding Debt
+                </p>
+                <p className="text-slate-400 text-xs mt-0.5">
+                  {debtorCount} player{debtorCount !== 1 ? "s" : ""} owe money.
+                  Click <span className="text-white font-medium">Settle</span>{" "}
+                  on a player card to collect — payment will be added to today's
+                  revenue automatically.
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -924,16 +1033,12 @@ export default function PlayersPage() {
                 className="w-full bg-slate-900/60 border border-slate-700/40 text-white placeholder-slate-500 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition-colors"
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               {(["All", "Regular", "Premium", "VIP"] as const).map((f) => (
                 <button
                   key={f}
                   onClick={() => setFilter(f)}
-                  className={`px-3 py-2 rounded-xl text-xs font-medium border transition-colors ${
-                    filter === f
-                      ? "bg-blue-600 text-white border-blue-500"
-                      : "bg-slate-900/60 border-slate-700/40 text-slate-400 hover:text-white"
-                  }`}
+                  className={`px-3 py-2 rounded-xl text-xs font-medium border transition-colors ${filter === f ? "bg-blue-600 text-white border-blue-500" : "bg-slate-900/60 border-slate-700/40 text-slate-400 hover:text-white"}`}
                 >
                   {f}
                 </button>
@@ -941,7 +1046,6 @@ export default function PlayersPage() {
             </div>
           </div>
 
-          {/* Players Grid */}
           {filtered.length === 0 ? (
             <div className="bg-slate-900/60 border border-slate-700/40 border-dashed rounded-2xl p-16 text-center">
               <div className="w-14 h-14 bg-slate-800/50 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -951,7 +1055,7 @@ export default function PlayersPage() {
               <p className="text-slate-500 text-sm mb-6">
                 {search
                   ? "Try a different search"
-                  : "Add your first regular player"}
+                  : "Add your first registered player"}
               </p>
               {!search && (
                 <button
@@ -979,7 +1083,6 @@ export default function PlayersPage() {
         </main>
       </div>
 
-      {/* Modals */}
       {addModal && (
         <PlayerModal
           player={null}

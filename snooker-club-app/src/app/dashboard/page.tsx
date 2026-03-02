@@ -17,8 +17,10 @@ import {
   FiAward,
   FiAlertTriangle,
   FiMapPin,
+  FiTarget,
+  FiCheckCircle,
 } from "react-icons/fi";
-import { GiPoolTriangle, GiSoccerBall } from "react-icons/gi";
+import { GiPoolTriangle } from "react-icons/gi";
 
 // ─── SVG Snooker Table ─────────────────────────────────────
 function SnookerTableSVG({
@@ -44,16 +46,9 @@ function SnookerTableSVG({
       className="w-full h-auto"
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Outer wooden frame */}
       <rect x="2" y="2" width="196" height="126" rx="10" fill={borderColor} />
-
-      {/* Cushion border */}
       <rect x="10" y="10" width="180" height="110" rx="7" fill={cushionColor} />
-
-      {/* Felt surface */}
       <rect x="20" y="18" width="160" height="94" rx="3" fill={feltColor} />
-
-      {/* Felt texture lines */}
       <line
         x1="20"
         y1="65"
@@ -72,8 +67,6 @@ function SnookerTableSVG({
         strokeWidth="0.5"
         opacity="0.3"
       />
-
-      {/* Baulk line */}
       <line
         x1="60"
         y1="18"
@@ -83,41 +76,29 @@ function SnookerTableSVG({
         strokeWidth="0.8"
         opacity="0.4"
       />
-
-      {/* D semicircle */}
       <path
-        d={`M 60 55 A 15 15 0 0 1 60 75`}
+        d="M 60 55 A 15 15 0 0 1 60 75"
         fill="none"
         stroke={feltLight}
         strokeWidth="0.8"
         opacity="0.4"
       />
-
-      {/* Corner Pockets */}
       <circle cx="20" cy="18" r="7" fill={pocketColor} />
       <circle cx="180" cy="18" r="7" fill={pocketColor} />
       <circle cx="20" cy="112" r="7" fill={pocketColor} />
       <circle cx="180" cy="112" r="7" fill={pocketColor} />
-
-      {/* Middle Pockets */}
       <circle cx="100" cy="12" r="6" fill={pocketColor} />
       <circle cx="100" cy="118" r="6" fill={pocketColor} />
-
-      {/* Pocket highlights */}
       <circle cx="20" cy="18" r="4" fill="#1a1a1a" />
       <circle cx="180" cy="18" r="4" fill="#1a1a1a" />
       <circle cx="20" cy="112" r="4" fill="#1a1a1a" />
       <circle cx="180" cy="112" r="4" fill="#1a1a1a" />
       <circle cx="100" cy="12" r="3.5" fill="#1a1a1a" />
       <circle cx="100" cy="118" r="3.5" fill="#1a1a1a" />
-
-      {/* Spot dots on felt */}
       <circle cx="150" cy="65" r="2" fill={feltLight} opacity="0.6" />
       <circle cx="100" cy="65" r="1.5" fill={feltLight} opacity="0.5" />
       <circle cx="60" cy="65" r="1.5" fill={feltLight} opacity="0.5" />
       <circle cx="40" cy="65" r="1.5" fill={feltLight} opacity="0.5" />
-
-      {/* Pulse animation ring when occupied */}
       {occupied && pulse && (
         <circle
           cx="100"
@@ -142,8 +123,6 @@ function SnookerTableSVG({
           />
         </circle>
       )}
-
-      {/* Table number badge */}
       <rect
         x="82"
         y="54"
@@ -169,7 +148,7 @@ function SnookerTableSVG({
   );
 }
 
-// ─── Types ────────────────────────────────────────────────
+// ─── Types ─────────────────────────────────────────────────
 interface ClubUser {
   club_name: string;
   owner_name: string;
@@ -177,12 +156,10 @@ interface ClubUser {
   location: string;
   tables: number;
 }
-
 interface SessionPlayer {
   name: string;
   isRegistered: boolean;
 }
-
 interface Session {
   players: SessionPlayer[];
   gameType: string;
@@ -190,7 +167,6 @@ interface Session {
   gameRate: number;
   startTime: number;
 }
-
 interface Table {
   id: number;
   name: string;
@@ -205,9 +181,17 @@ interface CompletedSession {
   duration: string;
   totalAmount: number;
   endTime: number;
+  paymentMethod?:
+    | "Cash"
+    | "EasyPaisa"
+    | "JazzCash"
+    | "OnCredit"
+    | "DebtPayment";
+  settledMethod?: "Cash" | "EasyPaisa" | "JazzCash";
+  creditPlayerName?: string;
 }
 
-// ─── Helpers ──────────────────────────────────────────────
+// ─── Helpers ───────────────────────────────────────────────
 function formatTime(seconds: number) {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
@@ -216,23 +200,28 @@ function formatTime(seconds: number) {
     return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
-
 function getElapsed(session: Session) {
   return Math.floor((Date.now() - session.startTime) / 1000);
 }
-
+function calcBill(session: Session, elapsed: number) {
+  if (session.gameUnit === "per hour")
+    return Math.ceil((elapsed / 3600) * session.gameRate);
+  return session.gameRate;
+}
 function getGreeting() {
   const h = new Date().getHours();
   if (h < 12) return "Good Morning";
   if (h < 17) return "Good Afternoon";
   return "Good Evening";
 }
-
-function calcBill(session: Session, elapsed: number) {
-  if (session.gameUnit === "per hour") {
-    return Math.ceil((elapsed / 3600) * session.gameRate);
-  }
-  return session.gameRate;
+function isToday(ts: number) {
+  const d = new Date(ts),
+    n = new Date();
+  return (
+    d.getDate() === n.getDate() &&
+    d.getMonth() === n.getMonth() &&
+    d.getFullYear() === n.getFullYear()
+  );
 }
 
 const navLinks = [
@@ -240,7 +229,7 @@ const navLinks = [
   { label: "Tables", icon: FiSquare, href: "/tables", active: false },
   { label: "Players", icon: FiUsers, href: "/members", active: false },
   { label: "Payments", icon: FiDollarSign, href: "/payments", active: false },
-  { label: "Games", icon: FiSquare, href: "/games", active: false },
+  { label: "Games", icon: FiTarget, href: "/games", active: false },
   { label: "Profile", icon: FiSettings, href: "/profile", active: false },
 ];
 
@@ -265,13 +254,8 @@ function Sidebar({
         />
       )}
       <aside
-        className={`
-        fixed top-0 left-0 h-screen w-64 bg-slate-900/95 backdrop-blur-xl border-r border-slate-700/50
-        z-30 flex flex-col transition-transform duration-300
-        ${open ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 lg:sticky lg:top-0 lg:z-auto
-      `}
+        className={`fixed top-0 left-0 h-screen w-64 bg-slate-900/95 backdrop-blur-xl border-r border-slate-700/50 z-30 flex flex-col transition-transform duration-300 ${open ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 lg:sticky lg:top-0 lg:z-auto`}
       >
-        {/* Brand */}
         <div className="px-5 pt-5 pb-4 border-b border-slate-700/50">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/20">
@@ -288,25 +272,26 @@ function Sidebar({
           </div>
         </div>
 
-        {/* Club Info */}
         <div className="px-4 py-3 border-b border-slate-700/50">
           <div className="relative bg-gradient-to-br from-blue-600/15 to-blue-500/5 border border-blue-500/20 rounded-xl p-3 overflow-hidden">
-            {/* Decorative dot */}
             <div className="absolute top-2 right-2 w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
             <p className="text-white text-sm font-bold truncate pr-4">
               {user.club_name}
             </p>
             <div className="flex items-center gap-2 mt-1.5">
               <span className="flex items-center gap-1 text-slate-400 text-[10px]">
-                <FiMapPin className="text-[9px]" /> {user.location}
+                <FiMapPin className="text-[9px]" />
+                {user.location}
               </span>
               <span className="text-slate-600">•</span>
               <span className="flex items-center gap-1 text-slate-400 text-[10px]">
-                <FiSquare className="text-[9px]" /> {user.tables} Tables
+                <FiSquare className="text-[9px]" />
+                {user.tables} Tables
               </span>
             </div>
           </div>
         </div>
+
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           <p className="text-slate-600 text-xs font-semibold uppercase tracking-wider px-3 mb-3">
             Navigation
@@ -315,12 +300,7 @@ function Sidebar({
             <a
               key={link.label}
               href={link.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
-                ${
-                  link.active
-                    ? "bg-blue-600/20 text-blue-400 border border-blue-500/30"
-                    : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-                }`}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${link.active ? "bg-blue-600/20 text-blue-400 border border-blue-500/30" : "text-slate-400 hover:text-white hover:bg-slate-800/60"}`}
             >
               <link.icon className="text-lg shrink-0" />
               {link.label}
@@ -330,9 +310,10 @@ function Sidebar({
             </a>
           ))}
         </nav>
+
         <div className="p-4 border-t border-slate-700/50">
           <div className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/40 rounded-xl px-3 py-2.5 mb-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 shadow shadow-blue-500/30">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0">
               {user.owner_name.charAt(0)}
             </div>
             <div className="flex-1 min-w-0">
@@ -363,16 +344,14 @@ function Sidebar({
   );
 }
 
-// ─── Main ──────────────────────────────────────────────────
+// ─── Main Page ─────────────────────────────────────────────
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<ClubUser | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [tables, setTables] = useState<Table[]>([]);
-  const [recentSessions, setRecentSessions] = useState<CompletedSession[]>([]);
+  const [allSessions, setAllSessions] = useState<CompletedSession[]>([]);
   const [debts, setDebts] = useState<Record<string, number>>({});
-  const [todayRevenue, setTodayRevenue] = useState(0);
-  const [todaySessions, setTodaySessions] = useState(0);
   const [tick, setTick] = useState(0);
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -385,34 +364,40 @@ export default function DashboardPage() {
     const u: ClubUser = JSON.parse(stored);
     setUser(u);
 
-    // Load tables
     const savedTables = localStorage.getItem(`club_tables_${u.email}`);
     setTables(
       savedTables
         ? JSON.parse(savedTables)
         : Array.from({ length: u.tables }, (_, i) => ({
             id: i + 1,
+            name: `Table ${i + 1}`,
             status: "available",
             session: null,
           })),
     );
 
-    // Load today stats
-    const stats = localStorage.getItem(`club_today_${u.email}`);
-    if (stats) {
-      const s = JSON.parse(stats);
-      setTodayRevenue(s.revenue || 0);
-      setTodaySessions(s.sessions || 0);
-    }
-
-    // Load recent sessions
     const recent = localStorage.getItem(`club_recent_${u.email}`);
-    if (recent) setRecentSessions(JSON.parse(recent));
+    if (recent) setAllSessions(JSON.parse(recent));
+
     const savedDebts = localStorage.getItem(`club_debts_${u.email}`);
     if (savedDebts) setDebts(JSON.parse(savedDebts));
+    else setDebts({});
   }, [router]);
 
-  // Live tick every second
+  useEffect(() => {
+    const onFocus = () => {
+      if (!user) return;
+      const recent = localStorage.getItem(`club_recent_${user.email}`);
+      if (recent) setAllSessions(JSON.parse(recent));
+      const savedDebts = localStorage.getItem(`club_debts_${user.email}`);
+      setDebts(savedDebts ? JSON.parse(savedDebts) : {});
+      const savedTables = localStorage.getItem(`club_tables_${user.email}`);
+      if (savedTables) setTables(JSON.parse(savedTables));
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [user]);
+
   useEffect(() => {
     const timer = setInterval(() => {
       setTick((t) => t + 1);
@@ -433,9 +418,56 @@ export default function DashboardPage() {
       </div>
     );
 
-  const totalDebt = Object.values(debts).reduce((a, b) => a + b, 0);
-  const debtorCount = Object.keys(debts).length;
-  const debtors = Object.entries(debts).filter(([, amount]) => amount > 0);
+  // ── Today's sessions from club_recent ─────────────────
+  const todaySessions = allSessions.filter((s) => isToday(s.endTime));
+
+  // ✅ FIX 1: REVENUE = Everything EXCEPT OnCredit
+  const todayRevenue = todaySessions
+    .filter((s) => s.paymentMethod !== "OnCredit")
+    .reduce((a, s) => a + s.totalAmount, 0);
+
+  // ✅ FIX 2: ACTIVE CREDIT = OnCredit sessions where player STILL owes money
+  const todayCreditSessions = todaySessions.filter((s) => {
+    if (s.paymentMethod !== "OnCredit") return false;
+    if (!s.creditPlayerName) return false;
+    const currentDebt = debts[s.creditPlayerName] || 0;
+    return currentDebt > 0; // Only count if debt still exists
+  });
+
+  const todayCreditTotal = todayCreditSessions.reduce(
+    (a, s) => a + s.totalAmount,
+    0,
+  );
+
+  // ✅ FIX 3: SETTLED CREDIT = OnCredit sessions that have been fully paid
+  const todayCreditSettled = todaySessions
+    .filter((s) => s.paymentMethod === "OnCredit")
+    .filter((s) => {
+      if (!s.creditPlayerName) return false;
+      const currentDebt = debts[s.creditPlayerName] || 0;
+      return currentDebt === 0; // Debt was cleared
+    })
+    .reduce((a, s) => a + s.totalAmount, 0);
+
+  // ✅ FIX 4: SESSION COUNT = Real game sessions only (not debt payment records)
+  const todayGameSessions = todaySessions.filter(
+    (s) => s.gameType !== "Debt Payment",
+  );
+  const todaySessionCount = todayGameSessions.length;
+
+  const todayPaidCount = todayGameSessions.filter(
+    (s) => s.paymentMethod !== "OnCredit",
+  ).length;
+  const todayCreditCount = todayGameSessions.filter(
+    (s) => s.paymentMethod === "OnCredit",
+  ).length;
+
+  // ── Debt payments settled today ───────────────────────
+  const todayDebtPaid = todaySessions
+    .filter((s) => s.paymentMethod === "DebtPayment")
+    .reduce((a, s) => a + s.totalAmount, 0);
+
+  // ── Live table stats ──────────────────────────────────
   const occupiedTables = tables.filter((t) => t.status === "occupied");
   const availableTables = tables.filter((t) => t.status === "available");
   const activePlayers = occupiedTables.reduce(
@@ -443,8 +475,14 @@ export default function DashboardPage() {
     0,
   );
 
-  // Most popular game from recent sessions
-  const gameCounts = recentSessions.reduce(
+  // ── Outstanding debts ─────────────────────────────────
+  const totalDebt = Object.values(debts).reduce((a, b) => a + b, 0);
+  const debtorCount = Object.values(debts).filter((v) => v > 0).length;
+  const debtors = Object.entries(debts).filter(([, v]) => v > 0);
+
+  // ── Insights ──────────────────────────────────────────
+  const gameSessions = allSessions.filter((s) => s.gameType !== "Debt Payment");
+  const gameCounts = gameSessions.reduce(
     (acc, s) => {
       acc[s.gameType] = (acc[s.gameType] || 0) + 1;
       return acc;
@@ -453,9 +491,7 @@ export default function DashboardPage() {
   );
   const popularGame =
     Object.entries(gameCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "—";
-
-  // Busiest table
-  const tableCounts = recentSessions.reduce(
+  const tableCounts = gameSessions.reduce(
     (acc, s) => {
       acc[s.tableNo] = (acc[s.tableNo] || 0) + 1;
       return acc;
@@ -464,6 +500,16 @@ export default function DashboardPage() {
   );
   const busiestTable =
     Object.entries(tableCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "—";
+  const avgPerSession =
+    todaySessionCount > 0 ? Math.round(todayRevenue / todaySessionCount) : 0;
+
+  // ── Today's session list ──────────────────────────────
+  const todayVisible = todaySessions
+    .slice()
+    .sort((a, b) => b.endTime - a.endTime)
+    .slice(0, 15);
+
+  void tick;
 
   return (
     <div className="min-h-screen bg-slate-950 flex">
@@ -475,10 +521,8 @@ export default function DashboardPage() {
       />
 
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
         <header className="sticky top-0 z-10 bg-slate-950/90 backdrop-blur-xl border-b border-slate-700/40 px-4 lg:px-6">
-          <div className="flex items-center justify-between h-18">
-            {/* Left — menu + page title */}
+          <div className="flex items-center justify-between h-14">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -486,10 +530,7 @@ export default function DashboardPage() {
               >
                 <FiMenu className="text-lg" />
               </button>
-
-              {/* Divider — desktop only */}
               <div className="hidden lg:block w-px h-5 bg-slate-700/60" />
-
               <div>
                 <h1 className="text-white font-bold text-base leading-tight">
                   Dashboard
@@ -504,9 +545,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Right — clock + status + bell */}
             <div className="flex items-center gap-2">
-              {/* Live clock */}
               <div className="hidden sm:flex items-center gap-2 bg-slate-900/80 border border-slate-700/50 rounded-xl px-3 py-1.5">
                 <FiClock className="text-slate-500 text-xs" />
                 <span className="text-slate-300 text-xs font-mono tracking-wide">
@@ -518,7 +557,6 @@ export default function DashboardPage() {
                 </span>
               </div>
 
-              {/* Tables status pill */}
               <div
                 className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium ${
                   occupiedTables.length > 0
@@ -527,22 +565,17 @@ export default function DashboardPage() {
                 }`}
               >
                 <div
-                  className={`w-1.5 h-1.5 rounded-full ${
-                    occupiedTables.length > 0
-                      ? "bg-red-400 animate-pulse"
-                      : "bg-emerald-400"
-                  }`}
+                  className={`w-1.5 h-1.5 rounded-full ${occupiedTables.length > 0 ? "bg-red-400 animate-pulse" : "bg-emerald-400"}`}
                 />
                 {occupiedTables.length > 0
                   ? `${occupiedTables.length} Active`
                   : "All Free"}
               </div>
 
-              {/* Bell */}
               <button className="relative p-2 bg-slate-900/80 border border-slate-700/50 rounded-xl text-slate-400 hover:text-white hover:border-slate-600 transition-all">
                 <FiBell className="text-base" />
-                {occupiedTables.length > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-blue-500 rounded-full" />
+                {(occupiedTables.length > 0 || totalDebt > 0) && (
+                  <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-orange-500 rounded-full" />
                 )}
               </button>
             </div>
@@ -550,24 +583,21 @@ export default function DashboardPage() {
         </header>
 
         <main className="flex-1 p-4 lg:p-8 space-y-6" suppressHydrationWarning>
-          {/* Welcome */}
-          <div className="relative bg-linear-to-r from-blue-600/20 via-blue-500/10 to-transparent border border-blue-500/20 rounded-2xl p-5 overflow-hidden">
-            <div className="relative">
-              <p className="text-blue-400 text-sm font-medium">
-                {getGreeting()}, {user.owner_name.split(" ")[0]}
-              </p>
-              <h2 className="text-white text-xl font-bold mt-0.5">
-                {user.club_name}
-              </h2>
-              <p className="text-slate-400 text-sm mt-1">
-                {occupiedTables.length > 0
-                  ? `${occupiedTables.length} table${occupiedTables.length > 1 ? "s" : ""} active right now with ${activePlayers} players`
-                  : "All tables are free. Ready for players!"}
-              </p>
-            </div>
+          <div className="relative bg-gradient-to-r from-blue-600/20 via-blue-500/10 to-transparent border border-blue-500/20 rounded-2xl p-5 overflow-hidden">
+            <p className="text-blue-400 text-sm font-medium">
+              {getGreeting()}, {user.owner_name.split(" ")[0]}
+            </p>
+            <h2 className="text-white text-xl font-bold mt-0.5">
+              {user.club_name}
+            </h2>
+            <p className="text-slate-400 text-sm mt-1">
+              {occupiedTables.length > 0
+                ? `${occupiedTables.length} table${occupiedTables.length > 1 ? "s" : ""} active right now with ${activePlayers} player${activePlayers !== 1 ? "s" : ""}`
+                : "All tables are free — ready for players!"}
+            </p>
           </div>
 
-          {/* Today's Stats */}
+          {/* ✅ FIXED: Revenue card shows only collected money, credit info in subtitle */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               {
@@ -575,14 +605,22 @@ export default function DashboardPage() {
                 value: `Rs. ${todayRevenue.toLocaleString()}`,
                 icon: FiDollarSign,
                 color: "emerald",
-                sub: `${todaySessions} sessions`,
+                sub:
+                  todayCreditTotal > 0
+                    ? `Rs. ${todayCreditTotal.toLocaleString()} unpaid (${todayCreditSessions.length} session${todayCreditSessions.length !== 1 ? "s" : ""})`
+                    : todayCreditSettled > 0
+                      ? `All credit settled (Rs. ${todayCreditSettled.toLocaleString()})`
+                      : `${todayPaidCount} paid session${todayPaidCount !== 1 ? "s" : ""}`,
               },
               {
                 label: "Sessions Today",
-                value: todaySessions,
+                value: todaySessionCount,
                 icon: FiActivity,
                 color: "blue",
-                sub: "Completed",
+                sub:
+                  todayCreditCount > 0
+                    ? `${todayPaidCount} paid • ${todayCreditCount} on credit`
+                    : `${todaySessionCount} completed`,
               },
               {
                 label: "Tables Occupied",
@@ -612,12 +650,12 @@ export default function DashboardPage() {
                       s.color === "emerald"
                         ? "bg-emerald-500/10 text-emerald-400"
                         : s.color === "blue"
-                          ? "bg-blue-500/10 text-blue-400"
+                          ? "bg-blue-500/10   text-blue-400"
                           : s.color === "red"
-                            ? "bg-red-500/10 text-red-400"
+                            ? "bg-red-500/10    text-red-400"
                             : s.color === "purple"
                               ? "bg-purple-500/10 text-purple-400"
-                              : "bg-slate-800 text-slate-400"
+                              : "bg-slate-800      text-slate-400"
                     }`}
                   >
                     <s.icon className="text-sm" />
@@ -638,25 +676,90 @@ export default function DashboardPage() {
                 >
                   {s.value}
                 </p>
-                <p className="text-slate-500 text-xs mt-1">{s.sub}</p>
+                <p
+                  className={`text-xs mt-1 ${
+                    todayCreditTotal > 0 && s.label === "Today's Revenue"
+                      ? "text-orange-400/70"
+                      : "text-slate-500"
+                  }`}
+                >
+                  {s.sub}
+                </p>
               </div>
             ))}
           </div>
 
-          {/* Live Tables + Today History */}
+          {/* ✅ FIXED: Warning only shows remaining unpaid credit */}
+          {todayCreditTotal > 0 && (
+            <div className="bg-orange-500/5 border border-orange-500/20 rounded-2xl px-5 py-4 flex items-start gap-3">
+              <FiAlertTriangle className="text-orange-400 text-base shrink-0 mt-0.5" />
+              <div>
+                <p className="text-orange-400 font-semibold text-sm">
+                  Rs. {todayCreditTotal.toLocaleString()} Outstanding — Not in
+                  Revenue Yet
+                </p>
+                <p className="text-slate-400 text-xs mt-0.5">
+                  {todayCreditSessions.length} session
+                  {todayCreditSessions.length !== 1 ? "s" : ""} unpaid.
+                  {todayCreditSettled > 0 && (
+                    <span className="text-emerald-400 font-medium">
+                      {" "}
+                      Rs. {todayCreditSettled.toLocaleString()} was settled
+                      today.
+                    </span>
+                  )}{" "}
+                  Go to{" "}
+                  <a
+                    href="/members"
+                    className="text-blue-400 underline font-medium"
+                  >
+                    Players
+                  </a>{" "}
+                  to collect — settlements are added to revenue automatically.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {todayCreditTotal === 0 && todayCreditSettled > 0 && (
+            <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-2xl px-5 py-4 flex items-start gap-3">
+              <FiCheckCircle className="text-emerald-400 text-base shrink-0 mt-0.5" />
+              <div>
+                <p className="text-emerald-400 font-semibold text-sm">
+                  All Credit Settled
+                </p>
+                <p className="text-slate-400 text-xs mt-0.5">
+                  Rs. {todayCreditSettled.toLocaleString()} in credit was
+                  collected today and added to revenue.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {todayDebtPaid > 0 && (
+            <div className="bg-blue-500/5 border border-blue-500/20 rounded-2xl px-5 py-3 flex items-center gap-3">
+              <FiCheckCircle className="text-blue-400 text-base shrink-0" />
+              <p className="text-slate-400 text-xs">
+                <span className="text-blue-400 font-semibold">
+                  Rs. {todayDebtPaid.toLocaleString()}
+                </span>{" "}
+                in old debt collected today — included in today's revenue.
+              </p>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            {/* Live Table Grid */}
             <div className="bg-slate-900/60 border border-slate-700/40 rounded-2xl overflow-hidden">
               <div className="px-6 py-4 border-b border-slate-700/40 flex items-center justify-between">
                 <div>
                   <h3 className="text-white font-semibold">Live Tables</h3>
                   <p className="text-slate-500 text-xs mt-0.5">
-                    Real time status
+                    Real-time status
                   </p>
                 </div>
                 <a
                   href="/tables"
-                  className="text-blue-400 text-xs hover:underline flex items-center gap-1"
+                  className="text-blue-400 text-xs hover:underline"
                 >
                   Manage →
                 </a>
@@ -671,7 +774,6 @@ export default function DashboardPage() {
                       ? calcBill(table.session, elapsed)
                       : 0;
                     const isOccupied = table.status === "occupied";
-
                     return (
                       <a
                         href="/tables"
@@ -682,21 +784,16 @@ export default function DashboardPage() {
                             : "border-slate-700/40 bg-slate-900/60 hover:border-slate-600/60"
                         }`}
                       >
-                        {/* Status Bar */}
                         <div
                           className={`h-0.5 w-full ${isOccupied ? "bg-red-500" : "bg-emerald-500"}`}
                         />
-
                         <div className="p-2">
-                          {/* SVG Table */}
                           <SnookerTableSVG
                             occupied={isOccupied}
                             tableNumber={table.id}
                             tableName={table.name || `Table ${table.id}`}
                             pulse={isOccupied}
                           />
-
-                          {/* Status & Timer */}
                           <div className="flex items-center justify-between mt-1.5 mb-1">
                             <div className="flex items-center gap-1">
                               <div
@@ -714,9 +811,7 @@ export default function DashboardPage() {
                               </span>
                             )}
                           </div>
-
-                          {/* Players & Bill */}
-                          {isOccupied && table.session ? (
+                          {isOccupied && table.session && (
                             <div>
                               <div className="space-y-0.5 mb-1">
                                 {table.session.players
@@ -744,14 +839,12 @@ export default function DashboardPage() {
                                 </span>
                               </div>
                             </div>
-                          ) : null}
+                          )}
                         </div>
                       </a>
                     );
                   })}
                 </div>
-
-                {/* Legend */}
                 <div className="flex items-center gap-4 mt-4 px-1">
                   <span className="flex items-center gap-1.5 text-xs text-slate-500">
                     <span className="w-2 h-2 bg-emerald-500 rounded-full" />{" "}
@@ -765,13 +858,17 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Today's Session History */}
+            {/* ✅ FIXED: Credit badge only shows on unpaid sessions */}
             <div className="bg-slate-900/60 border border-slate-700/40 rounded-2xl overflow-hidden">
               <div className="px-6 py-4 border-b border-slate-700/40 flex items-center justify-between">
                 <div>
-                  <h3 className="text-white font-semibold">Today's Sessions</h3>
+                  <h3 className="text-white font-semibold">Today's Activity</h3>
                   <p className="text-slate-500 text-xs mt-0.5">
-                    {recentSessions.length} completed
+                    {todaySessionCount} game session
+                    {todaySessionCount !== 1 ? "s" : ""}
+                    {todayDebtPaid > 0
+                      ? ` • ${todaySessions.filter((s) => s.paymentMethod === "DebtPayment").length} debt settled`
+                      : ""}
                   </p>
                 </div>
                 <a
@@ -782,62 +879,108 @@ export default function DashboardPage() {
                 </a>
               </div>
 
-              {recentSessions.length === 0 ? (
+              {todaySessions.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
                   <div className="w-12 h-12 bg-slate-800/50 rounded-2xl flex items-center justify-center mb-3">
                     <FiClock className="text-slate-600 text-xl" />
                   </div>
                   <p className="text-slate-500 text-sm">
-                    No sessions yet today
+                    No activity yet today
                   </p>
                   <p className="text-slate-600 text-xs mt-1">
                     Completed sessions will appear here
                   </p>
                 </div>
               ) : (
-                <div className="divide-y divide-slate-700/30 max-h-72 overflow-y-auto">
-                  {recentSessions.slice(0, 10).map((s) => (
-                    <div
-                      key={s.id}
-                      className="px-5 py-3.5 flex items-center gap-3 hover:bg-slate-800/30 transition-colors"
-                    >
-                      {/* Table Badge */}
-                      <div className="w-9 h-9 bg-blue-600/20 border border-blue-500/20 rounded-xl flex items-center justify-center shrink-0">
-                        <span className="text-blue-400 text-xs font-bold">
-                          T{s.tableNo}
-                        </span>
-                      </div>
+                <div className="divide-y divide-slate-700/30 max-h-80 overflow-y-auto">
+                  {todayVisible.map((s) => {
+                    const isCredit = s.paymentMethod === "OnCredit";
+                    const isDebt = s.paymentMethod === "DebtPayment";
+                    const wasSettled =
+                      isCredit &&
+                      s.creditPlayerName &&
+                      (debts[s.creditPlayerName] || 0) === 0;
 
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-white text-sm font-medium truncate">
-                          {s.players.map((p) => p.name).join(" vs ")}
-                        </p>
-                        <p className="text-slate-500 text-xs mt-0.5">
-                          {s.gameType} • {s.duration}
-                        </p>
-                      </div>
+                    return (
+                      <div
+                        key={s.id}
+                        className="px-5 py-3.5 flex items-center gap-3 hover:bg-slate-800/30 transition-colors"
+                      >
+                        <div
+                          className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
+                            isDebt
+                              ? "bg-blue-600/15 border-blue-500/20"
+                              : wasSettled
+                                ? "bg-emerald-500/15 border-emerald-500/20"
+                                : isCredit
+                                  ? "bg-orange-500/10 border-orange-500/20"
+                                  : "bg-blue-600/20 border-blue-500/20"
+                          }`}
+                        >
+                          {isDebt || wasSettled ? (
+                            <FiCheckCircle
+                              className={`text-sm ${isDebt ? "text-blue-400" : "text-emerald-400"}`}
+                            />
+                          ) : (
+                            <span
+                              className={`text-xs font-bold ${isCredit ? "text-orange-400" : "text-blue-400"}`}
+                            >
+                              T{s.tableNo || "—"}
+                            </span>
+                          )}
+                        </div>
 
-                      {/* Amount + Time */}
-                      <div className="text-right shrink-0">
-                        <p className="text-emerald-400 font-bold text-sm">
-                          Rs. {s.totalAmount.toLocaleString()}
-                        </p>
-                        <p className="text-slate-600 text-xs">
-                          {new Date(s.endTime).toLocaleTimeString("en-PK", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </p>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white text-sm font-medium truncate">
+                            {isDebt
+                              ? `${s.players[0]?.name} — Debt Settled`
+                              : s.players.map((p) => p.name).join(" vs ")}
+                          </p>
+                          <p className="text-slate-500 text-xs mt-0.5">
+                            {isDebt
+                              ? `Via ${s.settledMethod ?? "Cash"}`
+                              : `${s.gameType} • ${s.duration}`}
+                          </p>
+                        </div>
+
+                        {isCredit && !wasSettled && (
+                          <span className="text-[10px] bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2 py-0.5 rounded-lg shrink-0">
+                            Unpaid
+                          </span>
+                        )}
+                        {wasSettled && (
+                          <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-lg shrink-0">
+                            Settled
+                          </span>
+                        )}
+
+                        <div className="text-right shrink-0">
+                          <p
+                            className={`font-bold text-sm ${
+                              isCredit && !wasSettled
+                                ? "text-orange-400"
+                                : isDebt || wasSettled
+                                  ? "text-blue-400"
+                                  : "text-emerald-400"
+                            }`}
+                          >
+                            Rs. {s.totalAmount.toLocaleString()}
+                          </p>
+                          <p className="text-slate-600 text-xs">
+                            {new Date(s.endTime).toLocaleTimeString("en-PK", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
           </div>
 
-          {/* Outstanding Debts */}
           {totalDebt > 0 && (
             <div className="bg-slate-900/60 border border-orange-500/20 rounded-2xl overflow-hidden">
               <div className="px-6 py-4 border-b border-slate-700/40 flex items-center justify-between">
@@ -861,7 +1004,6 @@ export default function DashboardPage() {
                   <p className="text-slate-500 text-xs">Total outstanding</p>
                 </div>
               </div>
-
               <div className="divide-y divide-slate-700/30">
                 {debtors.map(([playerName, amount]) => (
                   <div
@@ -895,38 +1037,38 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Quick Insights */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
               {
                 label: "Most Popular Game",
                 value: popularGame,
                 icon: FiSquare,
+                color: "blue",
                 sub:
                   popularGame !== "—"
                     ? `${gameCounts[popularGame]} sessions`
                     : "No data yet",
-                color: "blue",
               },
               {
                 label: "Busiest Table",
                 value: busiestTable !== "—" ? `Table ${busiestTable}` : "—",
                 icon: FiAward,
+                color: "yellow",
                 sub:
                   busiestTable !== "—"
                     ? `${tableCounts[Number(busiestTable)]} sessions`
                     : "No data yet",
-                color: "yellow",
               },
               {
                 label: "Avg. per Session",
                 value:
-                  todaySessions > 0
-                    ? `Rs. ${Math.round(todayRevenue / todaySessions).toLocaleString()}`
+                  avgPerSession > 0
+                    ? `Rs. ${avgPerSession.toLocaleString()}`
                     : "—",
                 icon: FiTrendingUp,
-                sub: todaySessions > 0 ? "Today average" : "No sessions yet",
                 color: "purple",
+                sub:
+                  todaySessionCount > 0 ? "Today's average" : "No sessions yet",
               },
             ].map((s) => (
               <div
@@ -937,7 +1079,7 @@ export default function DashboardPage() {
                   <div
                     className={`p-2 rounded-xl ${
                       s.color === "blue"
-                        ? "bg-blue-500/10 text-blue-400"
+                        ? "bg-blue-500/10   text-blue-400"
                         : s.color === "yellow"
                           ? "bg-yellow-500/10 text-yellow-400"
                           : "bg-purple-500/10 text-purple-400"
