@@ -51,7 +51,7 @@ const DATE_FILTERS = [
 ];
 
 // ── Chart colors map ─────────────────────────────────────────────
-export const PIE_COLORS: Record<string, string> = {
+const PIE_COLORS: Record<string, string> = {
   Cash: "#10b981",
   EasyPaisa: "#8b5cf6",
   JazzCash: "#f59e42",
@@ -59,7 +59,7 @@ export const PIE_COLORS: Record<string, string> = {
   // fallback keys supported
 };
 
-export const GAME_COLORS: Record<string, string> = {
+const GAME_COLORS: Record<string, string> = {
   "Per Hour": "#3b82f6",
   "Full Frame": "#10b981",
   "6 Balls": "#8b5cf6",
