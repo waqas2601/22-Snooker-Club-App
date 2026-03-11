@@ -60,7 +60,7 @@ export default function PlayerCard({
   onSettle,
 }: PlayerCardProps) {
   const debt = debts[player.name] ?? 0;
-  const config = MEMBERSHIP_CONFIG[player.membershipType];
+  const config = MEMBERSHIP_CONFIG[player.membershipType] ?? MEMBERSHIP_CONFIG["Regular"];
   const Icon = config.icon;
 
   return (
