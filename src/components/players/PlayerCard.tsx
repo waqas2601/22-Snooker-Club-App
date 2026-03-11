@@ -158,7 +158,7 @@ export default function PlayerCard({
           { label: "Visits", value: player.totalVisits },
           {
             label: "Total Paid",
-            value: `Rs.${player.totalPaid.toLocaleString()}`,
+            value: `Rs.${((player.totalPaid ?? 0).toLocaleString())}`,
           },
           { label: "Last Visit", value: formatDate(player.lastVisit) },
         ].map((stat) => (
